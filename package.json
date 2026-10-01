@@ -1,0 +1,17 @@
+{
+  "name": "eve-overview-editor",
+  "version": "1.0.0",
+  "description": "EVE Online overview YAML editor (local web app)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

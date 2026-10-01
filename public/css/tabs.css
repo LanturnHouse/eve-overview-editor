@@ -1,0 +1,48 @@
+/* 오버뷰 탭 패널 (tb-) */
+.tb-barcard { margin-bottom: 14px; }
+.tb-barhead { margin-bottom: 6px; }
+.tb-bar { display: flex; flex-wrap: wrap; gap: 2px; padding: 0; background: #0b0d11; align-items: stretch; }
+.tb-bar-item { all: unset; box-sizing: border-box; cursor: pointer; padding: 7px 14px; border-bottom: 2px solid transparent; background: #14171c; color: #e0e0e0; font-size: 12px; white-space: nowrap; }
+.tb-bar-item:hover { background: #1c2027; }
+.tb-bar-item.active { background: #232830; border-bottom-color: var(--accent); }
+.tb-bar-item:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.tb-bar > .muted { padding: 7px 14px; }
+
+.tb-item:focus-visible { outline: 2px solid var(--blue); outline-offset: -1px; }
+.tb-idx { min-width: 20px; text-align: center; font-family: var(--mono); }
+.tb-li-name { background: #0b0d11; border-radius: 4px; padding: 1px 8px; }
+.tb-li-name span { font-size: 13px !important; }
+
+.tb-editor { min-width: 0; }
+.tb-name-input { width: 100%; }
+.tb-name-preview { min-height: 38px; display: flex; align-items: center; background: #0b0d11; }
+.tb-helpers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 8px 10px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; }
+.tb-help-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.tb-help-row > .muted { min-width: 92px; }
+.tb-size { width: 64px; padding: 3px 6px; }
+.tb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+@media (max-width: 700px) { .tb-grid { grid-template-columns: 1fr; } }
+.tb-select { max-width: 100%; }
+
+.tb-col-list { display: flex; flex-direction: column; gap: 3px; max-width: 460px; }
+.tb-col { display: flex; align-items: center; gap: 8px; padding: 3px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.tb-col-name { flex: 1; }
+.tb-col-acts { display: inline-flex; gap: 4px; }
+
+.tb-adv summary { cursor: pointer; color: var(--muted); }
+.tb-adv summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.tb-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 10px 0 0; }
+.tb-dl dt { color: var(--muted); }
+.tb-dl dd { margin: 0; word-break: break-all; }
+
+/* 이름 스타일 일괄 정리 도구 */
+.tb-styler { margin-bottom: 14px; }
+.tb-styler > summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.tb-style-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
+.tb-style-choice { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--panel2); }
+.tb-style-choice:hover { border-color: var(--muted); }
+.tb-style-choice:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
+.tb-style-choice.active { border-color: var(--accent); background: var(--accent-dim); }
+.tb-style-sample { padding: 6px 12px; width: fit-content; }
+.tb-style-bar { margin: 4px 0 10px; }
+.tb-style-bar .tb-bar-item { cursor: default; }

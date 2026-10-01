@@ -1,0 +1,26 @@
+/* columns 패널 전용 스타일 (접두사 co-) */
+.co-layout { display: grid; grid-template-columns: minmax(0, 460px) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .co-layout { grid-template-columns: 1fr; } }
+.co-hint { margin: 0 0 10px; }
+.co-side .hint { margin: 2px 0 8px; }
+.co-list { display: flex; flex-direction: column; gap: 3px; margin-bottom: 10px; }
+.co-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); }
+.co-row:hover { border-color: var(--line2); }
+.co-row:focus-within { border-color: var(--blue); }
+.co-row.inactive .co-name, .co-row.inactive .co-id { opacity: .5; }
+.co-num { width: 22px; text-align: right; color: var(--muted); font-size: 12px; font-family: var(--mono); flex: none; }
+.co-show { flex: none; }
+.co-name { flex: 1; min-width: 80px; display: flex; gap: 6px; align-items: center; }
+.co-id { flex: none; }
+.co-moves { display: inline-flex; gap: 2px; flex: none; }
+
+/* 미리보기: 오버뷰 표 */
+.co-preview { padding: 0; }
+.co-table { border-collapse: collapse; width: 100%; white-space: nowrap; }
+.co-table th { text-align: left; font-weight: 600; color: #d0d0d0; background: #14181e; border-bottom: 1px solid #333; border-right: 1px solid #222; padding: 3px 10px; }
+.co-table td { padding: 2px 10px; color: #c8c8c8; border-right: 1px solid #14181e; }
+.co-table tbody tr:nth-child(odd) { background: #0b0e12; }
+.co-table th:last-child, .co-table td:last-child { border-right: 0; }
+.co-table .co-c-DISTANCE, .co-table .co-c-SIZE, .co-table .co-c-VELOCITY, .co-table .co-c-RADIALVELOCITY,
+.co-table .co-c-TRANSVERSALVELOCITY, .co-table .co-c-ANGULARVELOCITY { text-align: right; }
+.co-table td.co-c-ICON { color: #9a9a9a; }
