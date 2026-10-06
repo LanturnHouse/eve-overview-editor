@@ -35,7 +35,7 @@ export function symbolPicker(onPick) {
     const chars = Array.from(g.chars);
     grid.replaceChildren(...(chars.length
       ? chars.map((ch) => h('button', { type: 'button', class: 'tb-sym', title: `${ch}  ${code(ch)}`, 'aria-label': `${ch} ${code(ch)}`, onclick: () => pick(ch) }, ch))
-      : [h('span', { class: 'muted small' }, '아직 쓴 문자가 없습니다. 다른 분류에서 고르면 여기에 쌓입니다.')]));
+      : [h('span', { class: 'muted small tb-sym-empty' }, '아직 쓴 문자가 없습니다. 다른 분류에서 고르면 여기에 쌓입니다.')]));
     hint.textContent = `${g.label} · ${chars.length}자`;
   }
   draw();
