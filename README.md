@@ -145,7 +145,7 @@ A **preset** is a saved list of *what an overview tab displays*: the object type
 **Types (groups) tab.** Pick what the preset shows.
 - Tick single groups, or tick a whole **category** (the checkbox shows a dash when only some groups are selected). The chips at the top (for example `Ship 50`) summarize your selection; click one to jump to that category.
 - **Search** by name in any of the five languages, or by group ID.
-- **Show selected only**, **Expand all / Collapse all**. By default only the categories that matter for the overview (plus any category your presets already use) are listed; tick **Show all categories** to see all of them.
+- **Show selected only**, **Expand all / Collapse all**. By default only the groups the game's own overview settings offer are listed. Groups that ESI knows about but the game does not list (ammo and scripts, regions, planetary structures, retired entries and so on) stay hidden, and so does any category that would be empty. A group your preset already contains is always shown, with an **unlisted** badge, so you can still untick it. Tick **Show unlisted groups** to see everything; the search box tells you when matches are hidden.
 - **Import from another preset** combines another preset's groups into this one: *Merge (union)*, *Keep intersection only*, *Subtract (difference)* or *Replace completely*.
 - **Clear all** removes every selection (you can undo it).
 - *Unknown groups* are IDs that no longer exist in the game data. You can leave them or remove them.
@@ -301,6 +301,7 @@ Copy the `.yaml` file from the overview folder (or use **Download**) and import 
 - No build step and no dependencies: the server is `server.mjs`, the app is plain ES modules in `public/`. [js-yaml](https://github.com/nodeca/js-yaml) is bundled in `public/vendor/`.
 - Translations live in `public/js/locales/` (English, Korean, Japanese, Russian, Chinese). Pull requests that improve them are welcome. The Japanese, Russian and Chinese state and column names are translations and may differ from the official in-game terms.
 - `node tools/build-data.mjs` refreshes the group and category names from ESI (saved to `public/data/groups.json`).
+- `node tools/build-overview-groups.mjs` refreshes `public/data/overview-groups.json`, the IDs of the groups the game's overview settings actually list. It reads the list that [Z-S Overview Customizer](https://github.com/Arziel1992/Z-S-Overview-Customizer) (AGPL-3.0) derived from an in-game "all entities" export; only the group IDs, which are game facts, are taken from it.
 - `node tools/roundtrip.mjs <file>` reads and rewrites a file and tells you whether the result is identical to the original.
 - `node tools/make-release.mjs` builds the Windows portable zip in `dist/`: the app, the Node.js runtime that is running the script (copied as `runtime\node.exe`), and a short guide.
 - `node tools/make-exe.mjs` builds the single-file `dist/EVE-Overview-Editor.exe` with Node.js's [single executable applications](https://nodejs.org/api/single-executable-applications.html) feature (needs Node.js 22+; it fetches [postject](https://github.com/nodejs/postject) with `npx`), then starts it once as a smoke test. `server.mjs` detects that it runs from the exe and then serves `public/` from inside it and keeps its settings in `EVE-Overview-Editor-data` next to the exe.

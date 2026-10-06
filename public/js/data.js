@@ -61,15 +61,29 @@ export const colorCss = (name) => COLOR_NAMES[name] ?? (name === 'gray' ? '#8080
 export const LABEL_TYPE_IDS = ['pilot name', 'ship type', 'ship name', 'corporation', 'alliance', 'faction', 'militia'];
 export const labelTypeName = (type) => (type === null || type === undefined ? t('data.labelSeparator') : tOrNull(`data.label.${type}`) ?? type);
 
-// 게임 오버뷰 유형 탭에 나오는 카테고리 (그 외는 "모든 카테고리 표시"를 켜야 보임)
-export const OVERVIEW_CATEGORIES = [25, 2, 8, 22, 18, 11, 87, 46, 6, 40, 23, 3, 65, 41];
+// 게임 오버뷰 유형 탭에 나오는 카테고리 (그 외는 "게임 목록에 없는 항목도 표시"를 켜야 보임)
+export const OVERVIEW_CATEGORIES = [25, 2, 8, 22, 18, 11, 87, 46, 6, 40, 23, 3, 65, 41, 17];
 
 let groupData = null;
+let listedIds = null;   // 게임 오버뷰 설정(필터 → 유형)에 실제로 나오는 그룹 ID (data/overview-groups.json), 없으면 null
 export async function loadGroupData() {
-  if (!groupData) groupData = await (await fetch('data/groups.json')).json();
+  if (!groupData) {
+    const [gd, listed] = await Promise.all([
+      fetch('data/groups.json').then((r) => r.json()),
+      fetch('data/overview-groups.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
+    ]);
+    groupData = gd;
+    listedIds = Array.isArray(listed?.ids) ? new Set(listed.ids) : null;
+  }
   return groupData;
 }
 export const getGroupData = () => groupData;
+/** 게임 오버뷰 설정의 유형 목록에 나오는 그룹인가. 목록 자료를 못 읽었으면 카테고리로 추정한다. */
+export const isListedGroup = (id) => {
+  const g = groupEntry(id);
+  if (!g) return false;
+  return listedIds ? listedIds.has(id) : OVERVIEW_CATEGORIES.includes(g.cat);
+};
 /** 그룹 ID -> 이름 객체 {en,ko,ja,ru,zh,cat,pub} 또는 undefined. 표시 이름은 nameOf(entry) */
 export const groupEntry = (id) => groupData?.groups[id];
 export const categoryEntry = (id) => groupData?.categories[id];
