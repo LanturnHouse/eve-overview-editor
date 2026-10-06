@@ -1,4 +1,4 @@
-// ESI에서 그룹/카테고리 이름(영어/한국어)을 받아 data/groups.json 으로 저장한다.
+// ESI에서 그룹/카테고리 이름(영어/한국어/일본어/러시아어/중국어)을 받아 data/groups.json 으로 저장한다.
 import { writeFileSync } from 'node:fs';
 const ESI = 'https://esi.evetech.net/latest';
 async function get(path, lang) {
@@ -19,12 +19,17 @@ async function pool(items, n, fn) {
   }));
   return out;
 }
+const LANGS = ['en', 'ko', 'ja', 'ru', 'zh'];
+const names = async (path) => {
+  const rs = await Promise.all(LANGS.map((l) => get(path, l)));
+  return rs[0] ? { rs, base: rs[0] } : null;
+};
 const catIds = await get('/universe/categories/', 'en');
 console.log('categories', catIds.length);
 const cats = {};
 await pool(catIds, 20, async id => {
-  const [en, ko] = await Promise.all([get(`/universe/categories/${id}/`, 'en'), get(`/universe/categories/${id}/`, 'ko')]);
-  if (en) cats[id] = { en: en.name, ko: ko?.name || en.name, pub: en.published };
+  const r = await names(`/universe/categories/${id}/`);
+  if (r) cats[id] = { ...Object.fromEntries(LANGS.map((l, i) => [l, r.rs[i]?.name || r.base.name])), pub: r.base.published };
 });
 let groupIds = [];
 for (let p = 1; ; p++) {
@@ -38,8 +43,8 @@ console.log('groups', groupIds.length);
 const groups = {};
 let done = 0;
 await pool(groupIds, 25, async id => {
-  const [en, ko] = await Promise.all([get(`/universe/groups/${id}/`, 'en'), get(`/universe/groups/${id}/`, 'ko')]);
-  if (en) groups[id] = { en: en.name, ko: ko?.name || en.name, cat: en.category_id, pub: en.published };
+  const r = await names(`/universe/groups/${id}/`);
+  if (r) groups[id] = { ...Object.fromEntries(LANGS.map((l, i) => [l, r.rs[i]?.name || r.base.name])), cat: r.base.category_id, pub: r.base.published };
   if (++done % 200 === 0) console.log(done);
 });
 writeFileSync('public/data/groups.json', JSON.stringify({ categories: cats, groups }));

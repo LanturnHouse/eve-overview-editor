@@ -1,7 +1,8 @@
 // 컬럼 패널: 오버뷰 컬럼 표시 여부(overviewColumns)와 순서(columnOrder).
 import { store } from '../store.js';
 import { h, toast, makeSortable, moveItem, gripHandle } from '../ui.js';
-import { ALL_COLUMNS, COLUMNS, columnName } from '../data.js';
+import { ALL_COLUMNS, columnName } from '../data.js';
+import { t } from '../i18n.js';
 
 const DEFAULT_ORDER = ['ICON', 'DISTANCE', 'NAME', 'TYPE', 'TAG', 'CORPORATION', 'ALLIANCE', 'FACTION', 'MILITIA', 'SIZE',
   'VELOCITY', 'RADIALVELOCITY', 'TRANSVERSALVELOCITY', 'ANGULARVELOCITY'];
@@ -42,16 +43,16 @@ const isShown = (c) => store.model.overviewColumns.includes(c);
 
 export default async function render(root) {
   root.replaceChildren();
-  const list = h('div', { class: 'co-list', role: 'list', 'aria-label': '컬럼 순서 목록' });
-  const preview = h('div', { class: 'preview co-preview', 'aria-label': '오버뷰 헤더 미리보기' });
+  const list = h('div', { class: 'co-list', role: 'list', 'aria-label': t('columns.listAria') });
+  const preview = h('div', { class: 'preview co-preview', 'aria-label': t('columns.previewAria') });
   const counter = h('span', { class: 'chip' });
 
   const refreshPreview = () => {
     const all = rowIds();
     const shown = all.filter(isShown);
-    counter.textContent = `표시 ${shown.length} / 전체 ${all.length}`;
+    counter.textContent = t('columns.counter', { a: shown.length, n: all.length });
     if (!shown.length) {
-      preview.replaceChildren(h('p', { class: 'muted' }, '표시할 컬럼이 없습니다. 왼쪽에서 하나 이상 선택하세요.'));
+      preview.replaceChildren(h('p', { class: 'muted' }, t('columns.noneShown')));
       return;
     }
     preview.replaceChildren(h('table', { class: 'co-table' },
@@ -82,42 +83,42 @@ export default async function render(root) {
 
   root.append(
     h('div', { class: 'panel-head' },
-      h('h2', {}, '컬럼'),
-      h('p', {}, '오버뷰 목록에 보일 컬럼과 그 순서를 정합니다.')),
+      h('h2', {}, t('columns.title')),
+      h('p', {}, t('columns.intro'))),
     h('div', { class: 'co-layout' },
       h('div', { class: 'card co-main' },
         h('div', { class: 'toolbar' }, counter,
-          preset('전체 표시', '모든 컬럼을 표시합니다.', () => {
+          preset(t('columns.showAll'), t('columns.showAllTitle'), () => {
             store.model.overviewColumns = rowIds();
-            store.commit('column-preset'); drawList(); toast('모든 컬럼을 표시합니다.', 'ok', 1500);
+            store.commit('column-preset'); drawList(); toast(t('columns.showAllToast'), 'ok', 1500);
           }),
-          preset('최소 (아이콘·거리·이름·종류)', '아이콘, 거리, 이름, 종류만 표시합니다.', () => {
+          preset(t('columns.minimal'), t('columns.minimalTitle'), () => {
             store.model.overviewColumns = [...MINIMAL];
-            store.commit('column-preset'); drawList(); toast('최소 컬럼만 표시합니다.', 'ok', 1500);
+            store.commit('column-preset'); drawList(); toast(t('columns.minimalToast'), 'ok', 1500);
           }),
-          preset('순서를 기본값으로 초기화', '컬럼 순서를 게임 기본 순서로 되돌립니다. 표시 여부는 유지됩니다.', () => {
+          preset(t('columns.resetOrder'), t('columns.resetOrderTitle'), () => {
             const extra = rowIds().filter((c) => !DEFAULT_ORDER.includes(c));
             store.model.columnOrder = [...DEFAULT_ORDER, ...extra];
-            store.commit('column-preset'); drawList(); toast('컬럼 순서를 기본값으로 되돌렸습니다.', 'ok', 1500);
+            store.commit('column-preset'); drawList(); toast(t('columns.resetOrderToast'), 'ok', 1500);
           })),
         h('p', { class: 'hint co-hint' },
-          '표시 여부는 체크박스(overviewColumns)가, 순서는 목록의 위치(columnOrder)가 정합니다. 표시 중이어도 순서만 바꿀 수 있고, 체크를 꺼도 순서는 유지됩니다.'),
+          t('columns.hintKeys')),
         list,
-        h('p', { class: 'hint co-hint' }, '탭별 컬럼은 \'오버뷰 탭\' 패널에서 설정하세요. 여기 설정은 탭별 설정이 없는 탭의 기본값입니다.')),
+        h('p', { class: 'hint co-hint' }, t('columns.hintTabs'))),
       h('div', { class: 'card co-side' },
-        h('h3', {}, '오버뷰 헤더 미리보기'),
-        h('p', { class: 'hint' }, '표시 중인 컬럼만 정해진 순서로 보입니다. 값은 예시이며 실제 게임 화면과 다를 수 있습니다.'),
+        h('h3', {}, t('columns.previewHeading')),
+        h('p', { class: 'hint' }, t('columns.previewHint')),
         preview)));
   drawList();
 }
 
 function columnRow(c, i, total, ctx) {
   const m = store.model;
-  const known = c in COLUMNS;
+  const known = ALL_COLUMNS.includes(c);
   const name = columnName(c);
 
   const show = h('input', {
-    type: 'checkbox', checked: isShown(c), 'aria-label': `${name} 표시`,
+    type: 'checkbox', checked: isShown(c), 'aria-label': t('columns.showAria', { name }),
     onchange: () => {
       const arr = m.overviewColumns;
       const at = arr.indexOf(c);
@@ -137,11 +138,11 @@ function columnRow(c, i, total, ctx) {
   const row = h('div', { class: `co-row${isShown(c) ? '' : ' inactive'}`, role: 'listitem', draggable: 'true', dataset: { sortable: '', id: c } },
     h('span', { class: 'co-num' }, i + 1),
     gripHandle(),
-    h('label', { class: 'check co-show' }, show, h('span', {}, '표시')),
-    h('span', { class: 'co-name' }, name, known ? null : h('span', { class: 'badge warn' }, '미확인')),
+    h('label', { class: 'check co-show' }, show, h('span', {}, t('columns.show'))),
+    h('span', { class: 'co-name' }, name, known ? null : h('span', { class: 'badge warn' }, t('columns.unknown'))),
     h('span', { class: 'co-id mono small muted' }, c),
     h('span', { class: 'co-moves' },
-      h('button', { type: 'button', class: 'btn small', dataset: { act: 'up' }, disabled: i === 0, title: '위로', 'aria-label': `${name} 위로`, onclick: () => move(-1) }, '▲'),
-      h('button', { type: 'button', class: 'btn small', dataset: { act: 'down' }, disabled: i === total - 1, title: '아래로', 'aria-label': `${name} 아래로`, onclick: () => move(1) }, '▼')));
+      h('button', { type: 'button', class: 'btn small', dataset: { act: 'up' }, disabled: i === 0, title: t('columns.up'), 'aria-label': t('columns.upAria', { name }), onclick: () => move(-1) }, '▲'),
+      h('button', { type: 'button', class: 'btn small', dataset: { act: 'down' }, disabled: i === total - 1, title: t('columns.down'), 'aria-label': t('columns.downAria', { name }), onclick: () => move(1) }, '▼')));
   return row;
 }

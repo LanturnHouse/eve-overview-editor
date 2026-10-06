@@ -3,7 +3,7 @@
   --bg: #0e1116; --panel: #151a22; --panel2: #1b222c; --line: #2a3340; --line2: #364254;
   --text: #dbe3ee; --muted: #8493a8; --accent: #f0a53a; --accent-dim: #f0a53a22; --blue: #4aa3ff;
   --danger: #ef5350; --ok: #5cc98a; --radius: 8px;
-  --font: 'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  --font: 'Segoe UI', 'Malgun Gothic', 'Yu Gothic UI', 'Microsoft YaHei UI', 'Apple SD Gothic Neo', 'Hiragino Sans', 'PingFang SC', system-ui, sans-serif;
   --mono: Consolas, 'D2Coding', monospace;
   color-scheme: dark;
 }
@@ -21,6 +21,7 @@ p { margin: 0; }
 .topbar { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .topbar .brand { font-weight: 700; color: var(--accent); margin-right: 8px; letter-spacing: .3px; }
 .topbar .spacer { flex: 1; }
+.topbar .lang-select { max-width: 150px; }
 .topbar .filebox { display: flex; align-items: center; gap: 6px; }
 .dirty-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .shell { display: grid; grid-template-columns: 190px 1fr; min-height: 0; }
@@ -96,4 +97,4 @@ dialog.modal { background: var(--panel); color: var(--text); border: 1px solid v
 dialog.modal::backdrop { background: #000a; }
 .modal-msg { margin-bottom: 12px; white-space: pre-wrap; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
-.dropzone-active::after { content: '여기에 YAML 파일을 놓으세요'; position: fixed; inset: 0; background: #000b; color: var(--accent); display: grid; place-items: center; font-size: 22px; z-index: 200; }
+.dropzone-active::after { content: attr(data-drop); position: fixed; inset: 0; background: #000b; color: var(--accent); display: grid; place-items: center; font-size: 22px; z-index: 200; }

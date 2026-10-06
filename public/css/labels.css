@@ -9,7 +9,7 @@
 .lb-row { background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
 .lb-row:focus-within { border-color: var(--line2); }
 .lb-row.off .lb-name { color: var(--muted); text-decoration: line-through; }
-.lb-main { display: grid; grid-template-columns: auto auto 120px minmax(120px, 1fr) minmax(120px, 1fr) auto; align-items: center; gap: 8px; }
+.lb-main { display: grid; grid-template-columns: auto auto 160px minmax(120px, 1fr) minmax(120px, 1fr) auto; align-items: center; gap: 8px; }
 .lb-name { display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lb-vis { display: inline-flex; align-items: center; cursor: pointer; }
 .lb-markup { width: 100%; min-width: 0; }

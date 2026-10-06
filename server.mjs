@@ -36,7 +36,7 @@ let dir = loadConfig().dir || defaultDir();
 const isYamlName = (n) => typeof n === 'string' && n === path.basename(n) && /\.ya?ml$/i.test(n) && !n.startsWith('.');
 const stamp = () => new Date().toISOString().replace(/[:.]/g, '-').replace('T', '_').slice(0, 19);
 
-function json(res, code, obj) {
+function json(res, code, obj) {  // 오류 응답은 { error: 영어 메시지, code: 기계용 코드 } — UI 가 code 로 번역한다
   res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(obj));
 }
@@ -60,13 +60,13 @@ function listFiles() {
 async function api(req, res, url) {
   const q = url.searchParams;
   // 변경 요청은 같은 출처의 우리 앱에서만 허용 (다른 웹페이지가 로컬 서버를 두드리는 것 방지)
-  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'overview-editor') return json(res, 403, { error: 'forbidden' });
+  if (req.method !== 'GET' && req.headers['x-requested-with'] !== 'overview-editor') return json(res, 403, { error: 'forbidden', code: 'forbidden' });
 
   if (url.pathname === '/api/state') return json(res, 200, { dir, exists: fs.existsSync(dir), files: listFiles() });
 
   if (url.pathname === '/api/dir' && req.method === 'POST') {
     const { dir: d } = JSON.parse(await readBody(req));
-    if (!d || !path.isAbsolute(d) || !fs.existsSync(d) || !fs.statSync(d).isDirectory()) return json(res, 400, { error: '존재하지 않는 폴더입니다.' });
+    if (!d || !path.isAbsolute(d) || !fs.existsSync(d) || !fs.statSync(d).isDirectory()) return json(res, 400, { error: 'Directory does not exist', code: 'dir_not_found' });
     dir = path.resolve(d);
     fs.writeFileSync(CONFIG, JSON.stringify({ dir }, null, 2));
     return json(res, 200, { dir, files: listFiles() });
@@ -74,10 +74,10 @@ async function api(req, res, url) {
 
   if (url.pathname === '/api/file') {
     const name = q.get('name');
-    if (!isYamlName(name)) return json(res, 400, { error: '잘못된 파일 이름입니다.' });
+    if (!isYamlName(name)) return json(res, 400, { error: 'Invalid file name', code: 'bad_filename' });
     const p = path.join(dir, name);
     if (req.method === 'GET') {
-      if (!fs.existsSync(p)) return json(res, 404, { error: '파일이 없습니다.' });
+      if (!fs.existsSync(p)) return json(res, 404, { error: 'File not found', code: 'not_found' });
       return json(res, 200, { name, text: fs.readFileSync(p, 'utf8'), mtime: fs.statSync(p).mtimeMs });
     }
     if (req.method === 'PUT') {
@@ -108,10 +108,10 @@ async function api(req, res, url) {
   }
   if (url.pathname === '/api/backup') {
     const name = q.get('name');
-    if (!isYamlName(name) || !fs.existsSync(path.join(BACKUPS, name))) return json(res, 404, { error: 'not found' });
+    if (!isYamlName(name) || !fs.existsSync(path.join(BACKUPS, name))) return json(res, 404, { error: 'File not found', code: 'not_found' });
     return json(res, 200, { name, text: fs.readFileSync(path.join(BACKUPS, name), 'utf8') });
   }
-  return json(res, 404, { error: 'not found' });
+  return json(res, 404, { error: 'Not found', code: 'not_found' });
 }
 
 function serveStatic(req, res, url) {
