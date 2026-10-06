@@ -10,6 +10,10 @@ It works on the YAML file the game itself exports, so it never touches the game 
 
 > Unofficial, free, non-commercial fan tool. Not affiliated with CCP Games. See the [CCP notice](#ccp-notice).
 
+[![Watch the video tutorial](docs/img/video-thumbnail.jpg)](https://youtu.be/WOjL-5-N6YE)
+
+▶ **[Video tutorial](https://youtu.be/WOjL-5-N6YE)** (4 minutes, English narration, subtitles in English, 한국어, 日本語, Русский and 中文).
+
 ## Contents
 
 - [What you can do with it](#what-you-can-do-with-it)
@@ -81,8 +85,8 @@ The editor changes a **file**, not the running game. So the loop is: export from
 
 ### 1. Export your settings from the game
 
-1. Open the **Overview settings** window (from the Overview window's right-click / menu, or with the shortcut you set under *Esc → Shortcuts → Window*).
-2. Go to the **Misc** tab and click **Export overview settings** at the bottom. (Some client versions put Import / Export in the settings window's options menu instead.) Give the file a name.
+1. Open the menu of the Overview window (the **⋮** at its top-right) and choose **Open Overview Settings**. You can also use the shortcut you set under *Esc → Shortcuts → Window*.
+2. In the Overview Settings window, open the **⋮ options menu** at the window's top-right and choose **Export Overview Settings**. Type a file name and press **Export**; the game then shows the path of the saved file. (Older guides describe Import / Export buttons at the bottom of the *Misc* tab; where they are depends on the client version.)
 3. The game saves a `.yaml` file in `Documents\EVE\Overview` (Windows: `%userprofile%\Documents\EVE\Overview`, macOS: `~/Documents/EVE/Overview`).
 
 ### 2. Open it in the editor
@@ -101,7 +105,7 @@ Press **Save** (or `Ctrl+S`). The file in your overview folder is overwritten, a
 
 ### 5. Import into the game
 
-Open **Overview settings → Misc** again and click **Import overview settings**, then pick the file you just saved. Your new tabs, colors and labels are applied right away. You don't need to restart the game.
+Open the Overview Settings window again, choose **Import Settings** from its **⋮ options menu**, pick the file you just saved and press **Import**. Your new tabs, colors and labels are applied right away. You don't need to restart the game.
 
 > The game does not watch the folder. Your changes only reach the game when you import the file.
 
@@ -299,5 +303,5 @@ This is an unofficial, free, non-commercial fan tool. This material is used with
 
 © 2014 CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
 
-- The background images in `public/img/regions/` are EVE Online imagery owned by CCP hf. They are **not** covered by this repository's MIT license (source code only), and are used only for a free, non-commercial purpose (the ship-label readability preview) under CCP's content policy. They will be removed on CCP's request. The screenshots in `docs/img/` show the app, including these backgrounds, under the same terms.
+- The background images in `public/img/regions/` are EVE Online imagery owned by CCP hf. They are **not** covered by this repository's MIT license (source code only), and are used only for a free, non-commercial purpose (the ship-label readability preview) under CCP's content policy. They will be removed on CCP's request. The screenshots in `docs/img/` show the app, including these backgrounds, and the video thumbnail there contains EVE Online game footage, under the same terms.
 - The code is MIT licensed. [js-yaml](https://github.com/nodeca/js-yaml) (MIT) is bundled in `public/vendor/`.

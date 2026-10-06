@@ -10,6 +10,10 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 > 비공식 무료 팬 도구이며 CCP Games 와 무관합니다. [CCP notice](#ccp-notice) 참고.
 
+[![영상 튜토리얼 보기](docs/img/video-thumbnail.jpg)](https://youtu.be/WOjL-5-N6YE)
+
+▶ **[영상 튜토리얼](https://youtu.be/WOjL-5-N6YE)** (4분, 영어 해설, 한국어·영어·일본어·러시아어·중국어 자막).
+
 ## 목차
 
 - [할 수 있는 일](#할-수-있는-일)
@@ -81,8 +85,8 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ### 1. 게임에서 설정 내보내기
 
-1. **오버뷰 설정(Overview settings)** 창을 엽니다. 오버뷰 창의 우클릭 메뉴를 쓰거나, *Esc → 단축키 → 창* 에서 지정한 단축키를 씁니다.
-2. **기타(Misc)** 탭 아래쪽의 **오버뷰 설정 내보내기(Export overview settings)** 를 누르고 파일 이름을 정합니다. (클라이언트 버전에 따라 가져오기/내보내기가 설정 창의 옵션 메뉴 안에 있을 수도 있습니다. 메뉴 이름은 게임 언어에 따라 다릅니다.)
+1. 오버뷰 창의 메뉴(오른쪽 위의 **⋮**)를 열고 **Open Overview Settings** 를 고릅니다. *Esc → 단축키 → 창* 에서 지정한 단축키를 써도 됩니다.
+2. 오버뷰 설정 창 오른쪽 위의 **⋮ 옵션 메뉴**에서 **Export Overview Settings** 를 고르고, 파일 이름을 입력한 뒤 **Export** 를 누릅니다. 저장된 파일 경로가 안내 창으로 나옵니다. (예전 안내에는 *Misc* 탭 아래쪽의 가져오기/내보내기 버튼이 나오는데, 위치는 클라이언트 버전에 따라 다릅니다. 메뉴 이름은 게임 언어에 따라 다를 수 있습니다.)
 3. 게임이 `Documents\EVE\Overview` 폴더에 `.yaml` 파일을 저장합니다. (Windows: `%userprofile%\Documents\EVE\Overview`, macOS: `~/Documents/EVE/Overview`)
 
 ### 2. 편집기에서 열기
@@ -101,7 +105,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ### 5. 게임으로 가져오기
 
-다시 **오버뷰 설정 → 기타** 에서 **오버뷰 설정 가져오기(Import overview settings)** 를 누르고 방금 저장한 파일을 고릅니다. 새 탭, 색, 라벨이 바로 적용됩니다. 게임을 다시 시작할 필요는 없습니다.
+오버뷰 설정 창을 다시 열고 **⋮ 옵션 메뉴**에서 **Import Settings** 를 고른 뒤, 방금 저장한 파일을 선택하고 **Import** 를 누릅니다. 새 탭, 색, 라벨이 바로 적용됩니다. 게임을 다시 시작할 필요는 없습니다.
 
 > 게임은 폴더를 감시하지 않습니다. 변경 사항은 파일을 **가져오기** 했을 때만 게임에 반영됩니다.
 
@@ -299,5 +303,5 @@ This is an unofficial, free, non-commercial fan tool. This material is used with
 
 © 2014 CCP hf. All rights reserved. "EVE", "EVE Online", "CCP", and all related logos and images are trademarks or registered trademarks of CCP hf.
 
-- `public/img/regions/` 의 배경 이미지는 EVE Online 의 이미지로 CCP hf 의 저작물입니다. 이 저장소의 MIT 라이선스(소스 코드 한정)가 적용되지 않으며, CCP 의 콘텐츠 이용 정책에 따라 무료·비영리 목적(선박 라벨 가독성 미리보기)으로만 사용합니다. CCP 가 요청하면 제거합니다. `docs/img/` 의 스크린샷에도 이 배경이 나오며 같은 조건으로 사용합니다.
+- `public/img/regions/` 의 배경 이미지는 EVE Online 의 이미지로 CCP hf 의 저작물입니다. 이 저장소의 MIT 라이선스(소스 코드 한정)가 적용되지 않으며, CCP 의 콘텐츠 이용 정책에 따라 무료·비영리 목적(선박 라벨 가독성 미리보기)으로만 사용합니다. CCP 가 요청하면 제거합니다. `docs/img/` 의 스크린샷에도 이 배경이 나오고 영상 썸네일에는 EVE Online 게임 화면이 들어 있으며, 모두 같은 조건으로 사용합니다.
 - 코드는 MIT 라이선스입니다. 번들된 [js-yaml](https://github.com/nodeca/js-yaml) (MIT) 이 `public/vendor/` 에 포함되어 있습니다.
