@@ -3,14 +3,39 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const PUBLIC = path.join(ROOT, 'public');
+const require = createRequire(import.meta.url);
+// 단일 exe(Node SEA)로 실행 중이면 앱 파일(public/)이 exe 안에 들어 있다. 일반 Node(18 포함)에서는 sea 모듈이 없거나 isSea() 가 false.
+let sea = null;
+try { const m = require('node:sea'); if (m.isSea()) sea = m; } catch { /* 일반 Node */ }
+// exe 는 콘솔 창이 바로 닫히므로, 시작 중이든 실행 중이든 오류가 나면 읽을 시간을 준 뒤 끝낸다
+if (sea) process.on('uncaughtException', (e) => { console.error(e); console.log('\nClosing in 15 seconds...'); setTimeout(() => process.exit(1), 15000); });
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC = path.join(HERE, 'public');
+/** config.json / backups 를 둘 폴더. exe 는 exe 옆의 EVE-Overview-Editor-data, 거기에 쓸 수 없으면(Program Files 등) %LOCALAPPDATA%\EVE-Overview-Editor */
+function pickDataDir() {
+  if (!sea) return HERE;
+  const candidates = [path.join(path.dirname(process.execPath), 'EVE-Overview-Editor-data'), path.join(process.env.LOCALAPPDATA || os.homedir(), 'EVE-Overview-Editor')];
+  for (const c of candidates) {
+    try { fs.mkdirSync(c, { recursive: true }); const probe = path.join(c, '.write-test'); fs.writeFileSync(probe, ''); fs.unlinkSync(probe); return c; } catch { /* 다음 후보 */ }
+  }
+  return candidates[0];
+}
+const ROOT = pickDataDir();
 const BACKUPS = path.join(ROOT, 'backups');
 const CONFIG = path.join(ROOT, 'config.json');
 const PORT = Number(process.env.PORT) || 5173;
 const HOST = '127.0.0.1';
+const URL_BASE = `http://localhost:${PORT}`;
+const AUTO_OPEN = !!sea && process.platform === 'win32' && !process.env.EVE_NO_OPEN;   // exe 로 켰을 때만 브라우저를 자동으로 연다 (start.bat 은 자기가 연다)
+function openBrowser() {
+  if (!AUTO_OPEN) return;
+  try { spawn('cmd.exe', ['/c', 'start', '', URL_BASE], { stdio: 'ignore', detached: true, windowsHide: true }).unref(); } catch { /* 열지 못해도 주소는 콘솔에 나온다 */ }
+}
 
 const MIME = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8',
@@ -29,7 +54,7 @@ function defaultDir() {
   return cands.find((c) => fs.existsSync(c)) || cands[0];
 }
 function loadConfig() {
-  try { return JSON.parse(fs.readFileSync(CONFIG, 'utf8')); } catch { return {}; }
+  try { const c = JSON.parse(fs.readFileSync(CONFIG, 'utf8')); return c && typeof c === 'object' ? c : {}; } catch { return {}; }
 }
 let dir = loadConfig().dir || defaultDir();
 
@@ -67,8 +92,10 @@ async function api(req, res, url) {
   if (url.pathname === '/api/dir' && req.method === 'POST') {
     const { dir: d } = JSON.parse(await readBody(req));
     if (!d || !path.isAbsolute(d) || !fs.existsSync(d) || !fs.statSync(d).isDirectory()) return json(res, 400, { error: 'Directory does not exist', code: 'dir_not_found' });
-    dir = path.resolve(d);
-    fs.writeFileSync(CONFIG, JSON.stringify({ dir }, null, 2));
+    const next = path.resolve(d);
+    fs.mkdirSync(ROOT, { recursive: true });
+    fs.writeFileSync(CONFIG, JSON.stringify({ dir: next }, null, 2));   // 저장에 성공한 뒤에만 바꾼다
+    dir = next;
     return json(res, 200, { dir, files: listFiles() });
   }
 
@@ -124,13 +151,24 @@ async function api(req, res, url) {
   return json(res, 404, { error: 'Not found', code: 'not_found' });
 }
 
+/** public/ 안의 파일 내용 (없으면 null). exe 에서는 exe 안에 심어 둔 파일에서 읽는다. */
+function readStatic(rel) {
+  if (sea) {
+    const key = 'public' + path.posix.normalize(rel);
+    if (key.includes('..')) return null;
+    try { return Buffer.from(sea.getAsset(key)); } catch { return null; }
+  }
+  const p = path.normalize(path.join(PUBLIC, rel));
+  if (!p.startsWith(PUBLIC + path.sep) || !fs.existsSync(p) || !fs.statSync(p).isFile()) return null;
+  return fs.readFileSync(p);
+}
 function serveStatic(req, res, url) {
   let rel = decodeURIComponent(url.pathname);
   if (rel === '/') rel = '/index.html';
-  const p = path.normalize(path.join(PUBLIC, rel));
-  if (!p.startsWith(PUBLIC + path.sep) || !fs.existsSync(p) || !fs.statSync(p).isFile()) { res.writeHead(404); return res.end('not found'); }
-  res.writeHead(200, { 'Content-Type': MIME[path.extname(p).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
-  fs.createReadStream(p).pipe(res);
+  const body = readStatic(rel);
+  if (!body) { res.writeHead(404); return res.end('not found'); }
+  res.writeHead(200, { 'Content-Type': MIME[path.extname(rel).toLowerCase()] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
+  res.end(body);
 }
 
 const server = http.createServer(async (req, res) => {
@@ -147,12 +185,16 @@ const server = http.createServer(async (req, res) => {
 server.on('error', (e) => {
   if (e.code === 'EADDRINUSE') {
     console.log(`Port ${PORT} is already in use - the editor is probably already running.`);
-    console.log(`Open http://localhost:${PORT} in your browser (or set PORT=xxxx to use another port).`);
+    console.log(`Open ${URL_BASE} in your browser (or set PORT=xxxx to use another port).`);
+    if (AUTO_OPEN) { openBrowser(); setTimeout(() => process.exit(0), 4000); return; }   // 이미 켜진 편집기를 열어 주고, 안내를 읽을 시간을 준다
     process.exit(0);
   }
   throw e;
 });
 server.listen(PORT, HOST, () => {
-  console.log(`EVE overview editor: http://localhost:${PORT}`);
+  if (sea) process.title = 'EVE Overview Editor';
+  console.log(`EVE overview editor: ${URL_BASE}${sea ? '  (close this window to stop)' : ''}`);
   console.log(`Overview folder: ${dir}`);
+  if (sea) console.log(`Settings and backups: ${ROOT}`);
+  openBrowser();
 });

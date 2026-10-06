@@ -60,7 +60,7 @@ add('README-FIRST.txt', '﻿' + crlf(`EVE Overview Editor ${version}  (Windows p
 
 HOW TO START
   1. Double-click  start.bat
-     (Node.js is already included in the "runtime" folder - there is nothing to install.)
+     (Node.js is already included in the "runtime" folder, so you do not need to install it.)
   2. Your browser opens http://localhost:5173 . If it does not, open that address yourself.
   3. Keep the black console window open while you edit. Close it to stop the editor.
 
@@ -77,7 +77,7 @@ https://github.com/LanturnHouse/eve-overview-editor
 
 사용 방법 (한국어)
   1. start.bat 을 더블클릭하세요.
-     (Node.js 가 "runtime" 폴더에 들어 있어 따로 설치할 것이 없습니다.)
+     (Node.js 가 "runtime" 폴더에 이미 들어 있어서 따로 설치하지 않아도 됩니다.)
   2. 브라우저에서 http://localhost:5173 이 열립니다. 열리지 않으면 이 주소를 직접 여세요.
   3. 편집하는 동안 검은 콘솔 창은 닫지 마세요. 끝내려면 그 창을 닫으면 됩니다.
 
