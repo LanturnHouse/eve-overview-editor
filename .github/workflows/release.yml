@@ -1,0 +1,52 @@
+# v 로 시작하는 태그(예: v1.0.0)를 푸시하면 Windows 휴대용 zip(Node.js 포함)을 만들어 GitHub Release 에 올린다.
+# Actions 탭에서 수동 실행(Run workflow)하면 release 없이 zip 만 만들어 artifact 로 받아 볼 수 있다.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows-portable:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 공식 Node.js(서명됨)를 설치한다. make-release.mjs 가 이 node.exe 를 배포본에 복사한다.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Build the portable zip
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/* ]]; then V="$GITHUB_REF_NAME"; else V="dev-${GITHUB_SHA::7}"; fi
+          node tools/make-release.mjs --version "$V"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: dist/*
+
+      - name: Publish the release
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # 파일 이름은 make-release.mjs 와 같은 규칙으로 정리한다 (태그에 쓸 수 없는 글자는 '-')
+          NAME="EVE-Overview-Editor-$(printf '%s' "$GITHUB_REF_NAME" | sed -E 's/[^A-Za-z0-9_.+-]+/-/g')-windows-x64.zip"
+          read -r -d '' NOTES <<EOF || true
+          **Windows, no install:** download **${NAME}** below (not "Source code"), extract it and double-click \`start.bat\`. Node.js is included.
+
+          **Windows, 설치 없이:** 아래의 **${NAME}** 을 받아("Source code" 가 아닙니다) 압축을 풀고 \`start.bat\` 을 실행하세요. Node.js 가 들어 있습니다.
+          EOF
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/* --title "EVE Overview Editor $GITHUB_REF_NAME" --notes "$NOTES" --generate-notes
+          fi
