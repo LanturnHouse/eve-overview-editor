@@ -4,7 +4,6 @@ import { store, clone } from '../store.js';
 import { BRACKET_SHOW_ALL } from '../model.js';
 import { ALL_COLUMNS, columnName } from '../data.js';
 import { renderMarkup, cssToArgb } from '../markup.js';
-import { styleCard } from './tab-styler.js';
 
 let selected = 0;
 try { selected = parseInt(localStorage.getItem('tabs.selected'), 10) || 0; } catch { /* 저장소 사용 불가 */ }
@@ -283,7 +282,6 @@ export default async function render(root) {
       h('p', {}, '게임 오버뷰 창 위쪽의 탭을 설정합니다.')),
     h('div', { class: 'card tb-barcard' },
       h('div', { class: 'tb-barhead muted small' }, '탭 바 미리보기 — 클릭해서 선택'), bar),
-    styleCard(m, () => render(root)),
     h('div', { class: 'split' },
       h('div', { class: 'card' },
         h('div', { class: 'toolbar' }, btn.add, btn.dup, btn.del, h('span', { class: 'grow' }), btn.up, btn.down),
