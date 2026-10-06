@@ -147,7 +147,7 @@ zip(방법 B)에는 PATH 에 `node` 가 없으므로, 압축을 푼 폴더에서
 **유형 (그룹) 탭.** 프리셋이 보여줄 대상을 고릅니다.
 - 그룹을 하나씩 체크하거나 **카테고리**째로 체크합니다(일부만 선택되면 체크박스에 대시가 표시됩니다). 위쪽의 칩(예: `함선 50`)은 선택 현황이고, 누르면 그 카테고리로 이동합니다.
 - **검색**: 5개 언어 중 어느 언어의 이름이든, 또는 그룹 ID 로 찾습니다.
-- **선택된 것만 보기**, **모두 펼치기 / 모두 접기**. 기본으로는 오버뷰에서 의미 있는 카테고리(와 프리셋이 이미 쓰고 있는 카테고리)만 나열하고, **모든 카테고리 표시**를 체크하면 전부 보입니다.
+- **선택된 것만 보기**, **모두 펼치기 / 모두 접기**. 기본으로는 게임의 오버뷰 설정이 실제로 보여주는 그룹만 나열합니다. ESI 에는 있지만 게임 목록에는 없는 그룹(탄약·스크립트, 지역, 행성 산업 설비, 폐기된 항목 등)은 숨기고, 비게 되는 카테고리도 숨깁니다. 프리셋에 이미 들어 있는 그룹은 **게임 목록 외** 표시와 함께 항상 보이므로 체크를 해제할 수 있습니다. **게임 목록 외 그룹 표시**를 체크하면 전부 보이고, 검색 중에 숨겨진 결과가 있으면 검색창 아래에 알려 줍니다.
 - **다른 프리셋에서 가져오기**: 다른 프리셋의 그룹을 이 프리셋에 *합치기 (합집합)*, *교집합만 남기기*, *빼기 (차집합)*, *완전히 교체* 중 하나로 반영합니다.
 - **전체 해제**: 선택을 모두 지웁니다(되돌리기 가능).
 - *알 수 없는 그룹*은 현재 게임 데이터에 없는 ID 입니다. 남겨 두어도, 제거해도 됩니다.
@@ -303,6 +303,7 @@ zip(방법 B)에는 PATH 에 `node` 가 없으므로, 압축을 푼 폴더에서
 - 빌드 단계도 의존성도 없습니다. 서버는 `server.mjs`, 앱은 `public/` 의 순수 ES 모듈이고, [js-yaml](https://github.com/nodeca/js-yaml) 은 `public/vendor/` 에 내장되어 있습니다.
 - 번역은 `public/js/locales/` 에 있습니다(영어·한국어·일본어·러시아어·중국어). 개선 PR 을 환영합니다. 일본어·러시아어·중국어의 상태/컬럼 이름은 번역이라 게임의 공식 용어와 다를 수 있습니다.
 - `node tools/build-data.mjs` 는 ESI 에서 그룹/카테고리 이름을 다시 받아 `public/data/groups.json` 에 저장합니다.
+- `node tools/build-overview-groups.mjs` 는 게임의 오버뷰 설정이 실제로 보여주는 그룹 ID 목록 `public/data/overview-groups.json` 을 다시 만듭니다. [Z-S Overview Customizer](https://github.com/Arziel1992/Z-S-Overview-Customizer)(AGPL-3.0)가 게임에서 "모든 엔티티"를 내보낸 자료로 정리해 둔 목록을 읽어 오며, 게임 데이터의 사실인 그룹 ID 만 가져옵니다.
 - `node tools/roundtrip.mjs <파일>` 은 파일을 읽고 다시 쓴 결과가 원본과 동일한지 비교합니다.
 - `node tools/make-release.mjs` 는 `dist/` 에 Windows 휴대용 zip 을 만듭니다: 앱, 스크립트를 실행한 Node.js 런타임(`runtime\node.exe` 로 복사), 간단한 안내문.
 - `node tools/make-exe.mjs` 는 Node.js 의 [단일 실행 파일(SEA)](https://nodejs.org/api/single-executable-applications.html) 기능으로 `dist/EVE-Overview-Editor.exe` 를 만들고(Node.js 22 이상 필요, `npx` 로 [postject](https://github.com/nodejs/postject) 를 받아 씁니다) 한 번 실행해서 동작을 확인합니다. `server.mjs` 는 exe 안에서 실행 중임을 알아채고 `public/` 을 exe 안에서 읽으며, 설정은 exe 옆의 `EVE-Overview-Editor-data` 에 저장합니다.

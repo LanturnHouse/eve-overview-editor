@@ -4,7 +4,7 @@ import { h, toast, confirmDialog, promptDialog, makeSortable, gripHandle, moveIt
 import { t, nameOf, getLang, getLocale } from '../i18n.js';
 import {
   STATES, STATE_KIND_IDS, ALL_STATE_IDS, stateName, stateNameEn, kindName, colorCss, colorLabel,
-  OVERVIEW_CATEGORIES, getGroupData,
+  OVERVIEW_CATEGORIES, getGroupData, isListedGroup,
 } from '../data.js';
 
 // ---- 패널 전체에서 유지되는 화면 설정 (render 가 여러 번 불려도 유지) ----
@@ -33,7 +33,7 @@ function groupIndex() {
     const id = Number(sid);
     if (!byCat.has(g.cat)) byCat.set(g.cat, []);
     const name = nameOf(g) || String(id);
-    byCat.get(g.cat).push({ id, name, alt: enAlt(g, name), search: searchText(g, String(id)) });
+    byCat.get(g.cat).push({ id, name, alt: enAlt(g, name), search: searchText(g, String(id)), listed: isListedGroup(id) });
   }
   for (const list of byCat.values()) list.sort((a, b) => nameCmp(a.name, b.name) || a.id - b.id);
   const catEntry = (c) => gd.categories[c] ?? { en: `#${c}` };
@@ -235,6 +235,7 @@ function groupsTab(p, { onChanged, rebuild }) {
   let q = '';
   /** @type {Map<number, any>} */
   const cats = new Map();
+  let hiddenGroups = [];   // 지금 목록에서 숨겨진 그룹 (게임 오버뷰에 없는 것) { g, c }
 
   const setIds = (ids, on) => {
     if (on) {
@@ -308,6 +309,7 @@ function groupsTab(p, { onChanged, rebuild }) {
         h('input', { type: 'checkbox', dataset: { gid: g.id }, checked: sel.has(g.id) }),
         h('span', { class: 'pr-ko', title: g.name }, g.name),
         g.alt ? h('span', { class: 'pr-en', title: g.alt }, g.alt) : null,
+        g.listed ? null : h('span', { class: 'badge pr-unlisted', title: t('presets.unlistedTitle') }, t('presets.unlisted')),
         h('span', { class: 'pr-id mono' }, g.id)));
     }
     rec.body.replaceChildren(frag);
@@ -317,12 +319,21 @@ function groupsTab(p, { onChanged, rebuild }) {
   function buildTree() {
     const wasOpen = new Set([...cats].filter(([, r]) => r.details.open).map(([id]) => id));
     cats.clear();
-    const used = new Set();
-    for (const pr of model.presets) for (const id of pr.groups) { const g = gd.groups[id]; if (g) used.add(g.cat); }
-    const visible = order.filter((c) => prefs.showAll || OVERVIEW_CATEGORIES.includes(c) || used.has(c));
-    const nodes = visible.map((c) => {
+    // 게임 오버뷰 목록에 없는 그룹은 숨기되, 이 프리셋에 이미 들어 있는 것은 보이게 둔다 (끌 수 있어야 하므로)
+    const pinned = new Set([...sel].filter((id) => gd.groups[id] && !isListedGroup(id)));
+    const showing = (g) => prefs.showAll || g.listed || pinned.has(g.id);
+    const visible = [];
+    hiddenGroups = [];
+    let shown = 0, total = 0;
+    for (const c of order) {
+      const all = byCat.get(c);
+      const list = all.filter(showing);
+      total += all.length; shown += list.length;
+      if (list.length) visible.push([c, list]);
+      for (const g of all) if (!showing(g)) hiddenGroups.push({ g, c });
+    }
+    const nodes = visible.map(([c, list]) => {
       const nm = catName(c);
-      const list = byCat.get(c);
       const cb = h('input', { type: 'checkbox', dataset: { catcb: c }, 'aria-label': t('presets.catAria', { name: nm.name }) });
       const countEl = h('span', { class: 'pr-cat-count' });
       const body = h('div', { class: 'pr-cat-body' });
@@ -339,7 +350,9 @@ function groupsTab(p, { onChanged, rebuild }) {
     });
     tree.replaceChildren(...nodes);
     for (const rec of cats.values()) refreshCat(rec);
-    catInfo.textContent = prefs.showAll ? t('presets.catInfoAll', { n: visible.length }) : t('presets.catInfoSome', { n: visible.length, total: order.length });
+    catInfo.textContent = prefs.showAll
+      ? t('presets.catInfoAll', { n: visible.length, g: shown })
+      : t('presets.catInfoSome', { n: visible.length, g: shown, hidden: total - shown });
     applyFilter();
   }
 
@@ -366,7 +379,9 @@ function groupsTab(p, { onChanged, rebuild }) {
       }
     }
     emptyEl.classList.toggle('hidden', shown > 0);
-    statusEl.textContent = filtering ? t('presets.status', { groups: matched, cats: shown }) : '';
+    // 숨겨진(게임 목록에 없는) 그룹 중에도 검색어에 맞는 것이 있으면 알려준다
+    const hiddenHits = q ? hiddenGroups.filter(({ g, c }) => g.search.includes(q) || catName(c).search.includes(q)).length : 0;
+    statusEl.textContent = [filtering ? t('presets.status', { groups: matched, cats: shown }) : '', hiddenHits ? t('presets.hiddenHits', { n: hiddenHits }) : ''].filter(Boolean).join(' · ');
   }
 
   // 펼칠 때 지연 생성 (toggle 은 버블링되지 않으므로 캡처로 받는다)

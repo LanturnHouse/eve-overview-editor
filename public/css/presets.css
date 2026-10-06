@@ -49,6 +49,7 @@ details.has-sel .pr-cat-count { color: var(--accent); font-weight: 600; }
 .pr-en { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .pr-id { font-size: 11px; color: var(--muted); margin-left: auto; padding-left: 6px; flex: none; }
 .pr-cat-name .pr-id { margin-left: 0; padding-left: 0; }
+.pr-unlisted { flex: none; font-size: 10px; line-height: 16px; }
 .pr-empty { padding: 12px 4px; }
 
 /* 알 수 없는 그룹 */
