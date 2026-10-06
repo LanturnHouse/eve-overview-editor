@@ -531,8 +531,10 @@ function statesTab(p, { rebuild }) {
   }
 
   const wrap = h('div', { class: 'pr-states' });
+  // 게임이 숨기는 상태(현상금 등)는 이 프리셋이 이미 쓰고 있을 때만 나열한다 (이 화면을 그릴 때 기준으로 고정)
+  const inUse = new Set([...p.filteredStates, ...p.alwaysShownStates]);
   for (const kind of STATE_KIND_IDS) {
-    const ids = ALL_STATE_IDS.filter((id) => STATES[id].kind === kind);
+    const ids = ALL_STATE_IDS.filter((id) => STATES[id].kind === kind && (!STATES[id].hidden || inUse.has(id)));
     if (!ids.length) continue;
     wrap.append(h('section', { class: 'pr-kind' }, h('h4', {}, kindName(kind)), ids.map(rowFor)));
   }

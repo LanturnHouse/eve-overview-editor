@@ -1,7 +1,7 @@
 // 깃발 · 배경 색상 패널: 상태별 우선순위 / 활성 / 색 / 깜빡임.
 import { store } from '../store.js';
 import { h, makeSortable, moveItem, gripHandle } from '../ui.js';
-import { STATES, APPEARANCE_STATE_IDS, stateName, stateNameEn, kindName, COLOR_NAMES, colorLabel, colorCss } from '../data.js';
+import { STATES, APPEARANCE_STATE_IDS, HIDDEN_STATE_IDS, isHiddenState, stateName, stateNameEn, kindName, COLOR_NAMES, colorLabel, colorCss } from '../data.js';
 import { t } from '../i18n.js';
 
 const MODE_IDS = ['flag', 'background'];
@@ -16,7 +16,9 @@ const statesKey = (p) => `${p}States`;
 /** 화면에 보일 전체 상태 ID (순서 배열 + 아직 순서에 없는 알려진 상태) */
 function rowIds(p) {
   const order = store.model[orderKey(p)];
-  return [...order, ...APPEARANCE_STATE_IDS.filter((id) => !order.includes(id))];
+  // 게임이 숨기는 상태라도 이미 켜져 있으면, 순서 배열에 없더라도 목록에 올린다
+  const extra = [...APPEARANCE_STATE_IDS, ...HIDDEN_STATE_IDS.filter((id) => isActive(p, id))];
+  return [...order, ...extra.filter((id) => !order.includes(id))];
 }
 /** 순서 배열에 없던 상태를 화면에 보이는 순서 그대로 편입 */
 function normalizeOrder(p) {
@@ -25,6 +27,21 @@ function normalizeOrder(p) {
   if (full.length !== order.length) order.splice(0, order.length, ...full);
 }
 const isActive = (p, id) => store.model[statesKey(p)].includes(id);
+// 게임이 숨기는 상태(현상금 등)는 이미 켜져 있을 때만 목록에 보인다. 이 화면을 그릴 때 켜져 있던 것은
+// 껐다가 다시 켤 수 있게 계속 보여 준다. 순서 배열에는 그대로 남아 있으므로 파일 내용은 바뀌지 않는다.
+let pinnedHidden = new Set();
+const pinHidden = (p) => { pinnedHidden = new Set(HIDDEN_STATE_IDS.filter((id) => isActive(p, id))); };
+/** 목록과 미리보기에 실제로 보이는 상태 ID (순서 배열 중 숨김 상태를 뺀 것) */
+const shownIds = (p) => rowIds(p).filter((id) => !isHiddenState(id) || pinnedHidden.has(id));
+/** 화면 위치(보이는 목록 기준)를 순서 배열의 위치로 옮겨서 이동한다. 사이에 숨겨진 항목이 있어도 상대 순서가 유지된다. */
+function moveShown(p, from, to) {
+  normalizeOrder(p);
+  const order = store.model[orderKey(p)];
+  // 보이는 항목들의 순서 배열 내 위치 (같은 ID 가 두 번 들어 있는 파일도 위치로 구분한다)
+  const pos = [];
+  order.forEach((id, k) => { if (!isHiddenState(id) || pinnedHidden.has(id)) pos.push(k); });
+  if (pos[from] !== undefined && pos[to] !== undefined) moveItem(order, pos[from], pos[to]);
+}
 const colorName = (p, id) => store.model.stateColors[`${p}_${id}`] ?? STATES[id]?.color ?? null;
 const isBlink = (p, id) => store.model.stateBlinks[`${p}_${id}`] === true;
 const cssOf = (name) => (name ? colorCss(name) : null);
@@ -55,12 +72,13 @@ export default async function render(root) {
 
   function drawBody() {
     const p = mode;
+    pinHidden(p);
     const list = h('div', { class: 'ap-list', role: 'list', 'aria-label': t('appearance.listAria', { mode: modeLabel(p) }) });
     const preview = h('div', { class: 'preview ap-preview', 'aria-label': t('appearance.previewAria', { mode: modeLabel(p) }) });
     const counter = h('span', { class: 'chip' });
 
     const refreshPreview = () => {
-      const all = rowIds(p);
+      const all = shownIds(p);
       // 좌측 목록의 모든 상태를 우선순위 순서 그대로 한 줄씩 보여준다 (비활성은 흐리게)
       const rows = all.map((id, i) => previewRow(p, id, `${(i * 7 + 3) % 40}.${(i * 3 + 1) % 10} km`, SAMPLE_NAMES[i % SAMPLE_NAMES.length]));
       rows.push(previewRow(p, null, '84.1 km', t('appearance.sampleNone')));
@@ -80,7 +98,7 @@ export default async function render(root) {
 
     const ctx = { refreshPreview, highlight, drawList: null };
     const drawList = (focus) => {
-      const ids = rowIds(p);
+      const ids = shownIds(p);
       list.replaceChildren(...ids.map((id, i) => stateRow(p, id, i, ids.length, ctx)));
       if (focus) {
         const row = list.querySelector(`[data-id="${focus.id}"]`);
@@ -92,8 +110,7 @@ export default async function render(root) {
     ctx.drawList = drawList;
 
     makeSortable(list, (from, to) => {
-      normalizeOrder(p);
-      moveItem(store.model[orderKey(p)], from, to);
+      moveShown(p, from, to);
       store.commit(`${p}-order`);
       drawList();
     });
@@ -176,8 +193,7 @@ function stateRow(p, id, i, total, ctx) {
   });
 
   const move = (dir) => {
-    normalizeOrder(p);
-    moveItem(m[orderKey(p)], i, i + dir);
+    moveShown(p, i, i + dir);
     store.commit(`${p}-order`);
     ctx.drawList({ id, act: dir < 0 ? 'up' : 'down' });
   };

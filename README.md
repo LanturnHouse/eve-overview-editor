@@ -157,6 +157,8 @@ A **preset** is a saved list of *what an overview tab displays*: the object type
 
 A state can only be in one of the two lists; the editor warns you about conflicts. **Copy from another preset** and **Reset all to default** save time.
 
+The state "Pilot has bounty on them" is left out of this list and of the flag and background lists, because the game can hide it depending on a server setting. If a preset (or the flag and background settings) already uses it, it is listed as usual, so nothing in your settings is lost.
+
 ![State filters](docs/img/en/presets-states.png)
 
 ### Overview tabs
