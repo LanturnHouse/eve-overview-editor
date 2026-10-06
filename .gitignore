@@ -3,3 +3,4 @@ backups/
 config.json
 *.log
 tools/_coverage.json
+dist/

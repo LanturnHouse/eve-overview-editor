@@ -9,8 +9,9 @@
 .ap-row.inactive .ap-name, .ap-row.inactive .swatch, .ap-row.inactive .ap-kind { opacity: .45; }
 .ap-num { width: 22px; text-align: right; color: var(--muted); font-size: 12px; font-family: var(--mono); flex: none; }
 .ap-name { flex: 1 1 160px; min-width: 0; }
-.ap-ko { display: flex; gap: 6px; align-items: center; }
-.ap-en { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.ap-ko { display: flex; gap: 6px; align-items: center; overflow-wrap: anywhere; }
+.ap-en { overflow: hidden; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.ap-en-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* flex 안의 글자는 ellipsis 가 먹지 않으므로 글자만 따로 감싼다 */
 .ap-en .ap-kind { flex: none; font-size: 10px; padding: 0 5px; }
 .ap-kind { flex: none; }
 .ap-color { width: 176px; min-width: 0; flex: none; }
