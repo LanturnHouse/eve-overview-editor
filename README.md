@@ -18,11 +18,11 @@ Double-click `start.bat` (or run `node server.mjs` and open http://localhost:517
 ## Features
 
 - **Presets** – tick groups in a searchable category tree, hide / always-show state filters, merge / subtract between presets, duplicate / rename (tab references update automatically)
-- **Overview tabs** – tab-name markup preview, EVE-verified special-character picker, preset / bracket assignment, per-tab columns
-- **Flag & background colors** – drag to set state priority, colors, blinking, preview
+- **Overview tabs** – a tab-name editor where what you type is shown with its styling (plus a tag field for the raw markup), a simple toolbar (colors, size, bold / italic / underline), an EVE-verified special-character picker, preset / bracket assignment, per-tab columns
+- **Flag & background colors** – drag to set state priority, colors, blinking; the preview lists every state
 - **Columns** – visibility and order
-- **Ship labels** – label pieces, order, pre/post markup, live preview on region backgrounds (Wormhole, Caldari, Amarr, Minmatar, Gallente)
-- **Files & advanced** – change summary, cleanup tools, backup restore, raw YAML editing
+- **Ship labels** – label pieces, order, the same styled editor + toolbar per piece, live preview on region backgrounds (Wormhole, Caldari, Amarr, Minmatar, Gallente), and a color scheme helper: pick a main color and get matching sub colors that stay readable on all five backgrounds
+- **Files & advanced** – change summary, cleanup tools, backup restore and deletion, raw YAML editing
 - Undo / redo (Ctrl+Z / Ctrl+Y), save (Ctrl+S), drag & drop a YAML file onto the window
 - **Multilingual UI** – English · 한국어 · 日本語 · Русский · 中文. It follows your browser language by default; change it with the language selector in the top bar.
 
