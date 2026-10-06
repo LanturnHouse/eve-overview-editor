@@ -45,7 +45,7 @@ The interface is available in **English · 한국어 · 日本語 · Русск�
 
 ## Requirements
 
-- **Windows 10 / 11** for the ready-to-run download: it carries its own copy of Node.js, so there is **nothing to install**.
+- **Windows 10 / 11** for the ready-to-run downloads (a single `.exe`, or a zip). Both include their own copy of Node.js, so you do **not** need to install Node.js.
 - On **macOS** or **Linux**, or if you would rather run the source code, you need **[Node.js](https://nodejs.org) 18 or newer** (the "LTS" download is fine). Only the `start.bat` launcher is Windows-only; elsewhere you start the server with one command.
 - No `npm install`, and no internet connection while you use the editor.
 - A current web browser (Chrome, Edge, Firefox, Safari).
@@ -53,23 +53,30 @@ The interface is available in **English · 한국어 · 日本語 · Русск�
 
 ## Install and start
 
-### Option A: Windows, no Node.js needed (recommended)
+### Option A: Windows, one file (recommended)
 
-1. Open the [latest release](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) and download **`EVE-Overview-Editor-…-windows-x64.zip`** (about 38 MB).
-2. Right-click the zip → **Extract All…**, and pick a normal folder such as your Desktop or Documents (not *Program Files*).
-3. Open the extracted folder and double-click **`start.bat`**. A console window opens and, two seconds later, your browser opens `http://localhost:5173`.
-4. **Leave the console window open while you edit.** Close it (or press `Ctrl+C`) to stop the editor.
+1. Open the [latest release](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) and download **`EVE-Overview-Editor.exe`** (about 92 MB; it contains the editor and Node.js).
+2. Put it in a folder of its own (for example `Documents\EVE-Overview-Editor`) and double-click it. A console window opens and your browser opens `http://localhost:5173`.
+3. **Leave the console window open while you edit.** Close it to stop the editor.
 
-The first time, Windows may show a security warning ("Windows protected your PC" or "Open File - Security Warning") because the files are not code-signed. If you trust the download, choose **More info → Run anyway** (or **Run**). The bundled `runtime\node.exe` is the unmodified official Node.js, and you can compare the zip against `SHA256SUMS.txt` on the release page.
+The first time, Windows may say it "protected your PC" because the file is not code-signed. If you trust the download, choose **More info → Run anyway**. You can compare the file against `SHA256SUMS.txt` on the release page.
+
+Your settings (the folder setting and the automatic backups) are kept in an `EVE-Overview-Editor-data` folder that the program creates next to the `.exe`. **Updating:** replace the `.exe` with the new one; the data folder stays.
+
+### Option B: Windows, zip with `start.bat`
+
+Prefer a folder over a single file? Download **`EVE-Overview-Editor-…-windows-x64.zip`** (about 38 MB) from the same release page, right-click it → **Extract All…** into a normal folder such as your Desktop or Documents (not *Program Files*), and double-click **`start.bat`**. A console window opens and, two seconds later, your browser opens `http://localhost:5173`. Leave the console window open while you edit; close it to stop.
+
+Windows may show a security warning here too ("Windows protected your PC" or "Open File - Security Warning"); choose **More info → Run anyway** (or **Run**) if you trust the download. The bundled `runtime\node.exe` is the unmodified official Node.js.
 
 **Updating:** extract the new version into a new folder. To keep your backups and the folder setting, copy `backups\` and `config.json` from the old folder into the new one.
 
-### Option B: from the source code (any system, needs Node.js 18+)
+### Option C: from the source code (any system, needs Node.js 18+)
 
 1. **Install Node.js** from [nodejs.org](https://nodejs.org) (accept the defaults). To check it, open a terminal and run `node -v`; it should print `v18` or higher.
 2. **Download the editor.** On the [GitHub page](https://github.com/LanturnHouse/eve-overview-editor), click the green **Code** button → **Download ZIP**, then unzip it anywhere (for example `C:\Tools\eve-overview-editor`). If you use git: `git clone https://github.com/LanturnHouse/eve-overview-editor.git`.
 3. **Start it.**
-   - **Windows:** double-click **`start.bat`** (the same launcher as in Option A; it uses your installed Node.js).
+   - **Windows:** double-click **`start.bat`** (the same launcher as in Option B; it uses your installed Node.js).
    - **macOS / Linux:** open a terminal in the folder and run `node server.mjs`, then open `http://localhost:5173` in your browser.
 4. **Leave the console window open while you edit.** Close it (or press `Ctrl+C`) to stop the editor.
 
@@ -77,7 +84,7 @@ The first time, Windows may show a security warning ("Windows protected your PC"
 
 To use another port, set `PORT` before starting, for example `PORT=5200 node server.mjs` (macOS / Linux), `set PORT=5200 && node server.mjs` (Windows Command Prompt) or `$env:PORT=5200; node server.mjs` (PowerShell). `start.bat` always opens port 5173, so open your own address by hand in that case.
 
-With the ready-to-run Windows download (Option A) there is no `node` on your PATH, so use the bundled runtime instead: `set PORT=5200 && runtime\node.exe server.mjs` in a Command Prompt opened in the extracted folder.
+With the single `.exe` (Option A), open a Command Prompt in its folder and run `set PORT=5200 && EVE-Overview-Editor.exe`. With the zip (Option B) there is no `node` on your PATH, so use the bundled runtime instead: `set PORT=5200 && runtime\node.exe server.mjs` in a Command Prompt opened in the extracted folder.
 
 ## Quick start: the whole workflow
 
@@ -219,7 +226,7 @@ The text shown next to ship brackets in space, built from **pieces** such as *Pi
 
 ![Files & advanced panel](docs/img/en/advanced.png)
 
-- **Overview folder.** The folder the game uses for export and import. **Change folder…** lets you enter another full path (the choice is remembered in `config.json` next to the server).
+- **Overview folder.** The folder the game uses for export and import. **Change folder…** lets you enter another full path (the choice is remembered in `config.json` next to the server, or in `EVE-Overview-Editor-data` when you use the `.exe`).
 - **Changes since last save.** A readable summary of what you have changed (presets, tabs, flags and backgrounds, columns, labels).
 - **Cleanup tools.** Remove group IDs that no longer exist, and find presets that no tab uses or tabs that point to a preset that is missing.
 - **Other settings.** The game's *Apply to other objects* option.
@@ -229,7 +236,7 @@ The text shown next to ship brackets in space, built from **pieces** such as *Pi
 ## Saving, backups and undo
 
 - **Nothing is written until you press Save.** Closing the browser tab with unsaved changes shows a warning.
-- **Save** overwrites the open file in the overview folder. Before that, the old file is copied to `backups/<name>_<date>_<time>.yaml` in the editor's own folder. Backups pile up until you delete them in *Files & advanced*.
+- **Save** overwrites the open file in the overview folder. Before that, the old file is copied to `backups/<name>_<date>_<time>.yaml` in the editor's own folder (with the `.exe`: in `EVE-Overview-Editor-data\backups`). Backups pile up until you delete them in *Files & advanced*.
 - **Save as…** writes under a file name you type (it asks before overwriting a different existing file; using the open file's own name is the same as Save). **Download** saves a copy through the browser instead.
 - **Undo / redo** work across all panels (`Ctrl+Z` / `Ctrl+Y`, or the ↶ ↷ buttons). Inside plain text boxes such as the search field and the tag fields, the browser's own text undo is used.
 - **Line endings:** when Save overwrites an existing file it keeps that file's line endings (CRLF stays CRLF); new files get CRLF on Windows; **Download** always produces LF. Everything the editor doesn't edit is written back unchanged.
@@ -256,8 +263,9 @@ Copy the `.yaml` file from the overview folder (or use **Download**) and import 
 
 | Problem | What to do |
 |---|---|
-| `start.bat` says *Node.js is required* | You are running the source code, which needs Node.js. Either download the ready-to-run zip from the [Releases page](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) (Option A), or install Node.js from [nodejs.org](https://nodejs.org), close the window and run `start.bat` again. |
+| `start.bat` says *Node.js is required* | You are running the source code, which needs Node.js. Either download the ready-to-run `.exe` or zip from the [Releases page](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) (Option A or B), or install Node.js from [nodejs.org](https://nodejs.org), close the window and run `start.bat` again. |
 | Windows says *Windows protected your PC* / *Open File - Security Warning* | The files are not code-signed. Choose **More info → Run anyway** (or **Run**) if you trust the download. |
+| The console window of the `.exe` shows a message and closes | If the editor is already running, a second start just opens it in your browser again and closes after a few seconds. If something went wrong, the window stays for about 15 seconds so you can read the message. |
 | *Port 5173 is already in use* | The editor is probably already running: open `http://localhost:5173`. Or start it on another port (see [Install and start](#install-and-start)). |
 | The browser didn't open | Open `http://localhost:5173` yourself. |
 | *Couldn't find the overview folder* | Export once from the game first, or go to **Files & advanced → Change folder…** and enter the full path, for example `C:\Users\you\Documents\EVE\Overview`. If your Documents folder lives on OneDrive, the editor tries that location too. |
@@ -270,13 +278,13 @@ Copy the `.yaml` file from the overview folder (or use **Download**) and import 
 
 ## FAQ
 
-**Do I have to install Node.js?** Not with the Windows download from the [Releases page](https://github.com/LanturnHouse/eve-overview-editor/releases/latest): it carries its own copy and nothing is installed on your PC (delete the folder to remove it). You only need Node.js to run the source code, or on macOS / Linux.
+**Do I have to install Node.js?** Not with the Windows downloads from the [Releases page](https://github.com/LanturnHouse/eve-overview-editor/releases/latest): the `.exe` and the zip each carry their own copy of Node.js. You only need Node.js to run the source code, or on macOS / Linux. There is no installer either way: to remove the program, delete the `.exe` (and its `EVE-Overview-Editor-data` folder) or the extracted folder.
 
 **Is it safe for my settings?** Yes. Saving always makes a backup first, unknown settings are preserved, and you can check the exact result in *Raw YAML* before saving.
 
 **Does it change the game or talk to the game?** No. It only edits the YAML file that the game exports and imports. It never touches the client or its network traffic.
 
-**Does it need the internet?** No. Everything it needs is in the download. Group and category names come from the public ESI data, bundled in the app.
+**Does it need the internet?** No. Everything it needs is in the file you downloaded. Group and category names come from the public ESI data, bundled in the app.
 
 **Is my data sent anywhere?** No. The server listens on `127.0.0.1` only, refuses requests addressed to any other host name, and refuses changes (saving, deleting, changing the folder) that don't come from the editor page itself, so other websites can't modify your files. Nothing is sent to the internet.
 
@@ -294,7 +302,9 @@ Copy the `.yaml` file from the overview folder (or use **Download**) and import 
 - Translations live in `public/js/locales/` (English, Korean, Japanese, Russian, Chinese). Pull requests that improve them are welcome. The Japanese, Russian and Chinese state and column names are translations and may differ from the official in-game terms.
 - `node tools/build-data.mjs` refreshes the group and category names from ESI (saved to `public/data/groups.json`).
 - `node tools/roundtrip.mjs <file>` reads and rewrites a file and tells you whether the result is identical to the original.
-- `node tools/make-release.mjs` builds the Windows portable zip in `dist/`: the app, the Node.js runtime that is running the script (copied as `runtime\node.exe`), and a short guide. Pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml`, which builds the zip with the official Node.js and attaches it, plus `SHA256SUMS.txt`, to a GitHub Release.
+- `node tools/make-release.mjs` builds the Windows portable zip in `dist/`: the app, the Node.js runtime that is running the script (copied as `runtime\node.exe`), and a short guide.
+- `node tools/make-exe.mjs` builds the single-file `dist/EVE-Overview-Editor.exe` with Node.js's [single executable applications](https://nodejs.org/api/single-executable-applications.html) feature (needs Node.js 22+; it fetches [postject](https://github.com/nodejs/postject) with `npx`), then starts it once as a smoke test. `server.mjs` detects that it runs from the exe and then serves `public/` from inside it and keeps its settings in `EVE-Overview-Editor-data` next to the exe.
+- Pushing a tag such as `v1.0.0` runs `.github/workflows/release.yml`, which builds both files with the official Node.js and attaches them, plus `SHA256SUMS.txt`, to a GitHub Release.
 - State ID names follow the public data of [kormat/eve-overview-tool](https://github.com/kormat/eve-overview-tool) and [Z-S Overview Customizer](https://github.com/Arziel1992/Z-S-Overview-Customizer). Colors shown for named colors are approximations of the in-game ones.
 
 ## CCP notice
@@ -305,3 +315,4 @@ This is an unofficial, free, non-commercial fan tool. This material is used with
 
 - The background images in `public/img/regions/` are EVE Online imagery owned by CCP hf. They are **not** covered by this repository's MIT license (source code only), and are used only for a free, non-commercial purpose (the ship-label readability preview) under CCP's content policy. They will be removed on CCP's request. The screenshots in `docs/img/` show the app, including these backgrounds, and the video thumbnail there contains EVE Online game footage, under the same terms.
 - The code is MIT licensed. [js-yaml](https://github.com/nodeca/js-yaml) (MIT) is bundled in `public/vendor/`.
+- The Windows zip contains the unmodified official [Node.js](https://nodejs.org) runtime (`runtime\node.exe`). The single `.exe` is built from the official Node.js runtime with the editor embedded and Node's code signature removed. Node.js is MIT licensed, with third-party components (<https://github.com/nodejs/node/blob/main/LICENSE>); the license text is attached to each release as `NODE-LICENSE.txt`.

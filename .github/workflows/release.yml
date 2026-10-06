@@ -1,5 +1,5 @@
-# v 로 시작하는 태그(예: v1.0.0)를 푸시하면 Windows 휴대용 zip(Node.js 포함)을 만들어 GitHub Release 에 올린다.
-# Actions 탭에서 수동 실행(Run workflow)하면 release 없이 zip 만 만들어 artifact 로 받아 볼 수 있다.
+# v 로 시작하는 태그(예: v1.1.0)를 푸시하면 Windows 용 exe 한 개와 휴대용 zip(둘 다 Node.js 포함), SHA256SUMS.txt 를 만들어 GitHub Release 에 올린다.
+# Actions 탭에서 수동 실행(Run workflow)하면 release 없이 같은 파일들을 만들어 artifact 로 받아 볼 수 있다.
 name: Release
 
 on:
@@ -13,10 +13,11 @@ permissions:
 jobs:
   windows-portable:
     runs-on: windows-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
-      # 공식 Node.js(서명됨)를 설치한다. make-release.mjs 가 이 node.exe 를 배포본에 복사한다.
+      # 공식 Node.js(서명됨)를 설치한다. make-release.mjs 와 make-exe.mjs 가 이 node.exe 를 배포본에 복사한다.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -27,9 +28,29 @@ jobs:
           if [[ "$GITHUB_REF" == refs/tags/* ]]; then V="$GITHUB_REF_NAME"; else V="dev-${GITHUB_SHA::7}"; fi
           node tools/make-release.mjs --version "$V"
 
+      # 단일 exe (Node SEA). 만든 뒤 바로 실행해서 서버가 응답하는지 확인까지 한다.
+      - name: Build the single-file exe
+        shell: bash
+        run: node tools/make-exe.mjs
+
+      # exe 에는 Node.js 가 들어 있으므로 Node 의 라이선스 문구를 릴리스에 함께 올린다
+      - name: Node.js license notice
+        shell: bash
+        run: |
+          NODE_DIR="$(dirname "$(node -p process.execPath)")"
+          cp "$NODE_DIR/LICENSE" dist/NODE-LICENSE.txt
+
+      - name: Checksums
+        shell: bash
+        run: |
+          cd dist
+          sha256sum EVE-Overview-Editor.exe EVE-Overview-Editor-*-windows-x64.zip > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+          ls -la
+
       - uses: actions/upload-artifact@v4
         with:
-          name: windows-portable
+          name: windows-downloads
           path: dist/*
 
       - name: Publish the release
@@ -41,9 +62,9 @@ jobs:
           # 파일 이름은 make-release.mjs 와 같은 규칙으로 정리한다 (태그에 쓸 수 없는 글자는 '-')
           NAME="EVE-Overview-Editor-$(printf '%s' "$GITHUB_REF_NAME" | sed -E 's/[^A-Za-z0-9_.+-]+/-/g')-windows-x64.zip"
           read -r -d '' NOTES <<EOF || true
-          **Windows, no install:** download **${NAME}** below (not "Source code"), extract it and double-click \`start.bat\`. Node.js is included.
+          **Windows:** download **EVE-Overview-Editor.exe** below and double-click it (not "Source code"). Node.js is included. Windows may say it protected your PC because the file is not code-signed: choose "More info" → "Run anyway". Prefer a folder? Use **${NAME}** instead: extract it and double-click \`start.bat\`.
 
-          **Windows, 설치 없이:** 아래의 **${NAME}** 을 받아("Source code" 가 아닙니다) 압축을 풀고 \`start.bat\` 을 실행하세요. Node.js 가 들어 있습니다.
+          **Windows:** 아래의 **EVE-Overview-Editor.exe** 를 받아 더블클릭하세요("Source code" 가 아닙니다). Node.js 가 들어 있습니다. 코드 서명이 없어서 Windows 가 "PC 를 보호했습니다" 라고 하면 "추가 정보" → "실행"을 누르세요. 폴더 형태가 좋다면 **${NAME}** 을 받아 압축을 풀고 \`start.bat\` 을 실행하세요.
           EOF
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" dist/* --clobber

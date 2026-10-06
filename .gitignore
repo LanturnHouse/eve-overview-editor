@@ -4,3 +4,4 @@ config.json
 *.log
 tools/_coverage.json
 dist/
+EVE-Overview-Editor-data/

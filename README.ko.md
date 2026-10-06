@@ -45,7 +45,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ## 준비물
 
-- 바로 실행되는 내려받기 파일은 **Windows 10 / 11** 용이며, Node.js 가 함께 들어 있어 **따로 설치할 것이 없습니다**.
+- 바로 실행되는 내려받기 파일(exe 하나, 또는 zip)은 **Windows 10 / 11** 용이며, 둘 다 Node.js 가 함께 들어 있어 Node.js 를 **따로 설치하지 않아도** 됩니다.
 - **macOS**, **Linux** 이거나 소스 코드로 실행하려면 **[Node.js](https://nodejs.org) 18 이상**("LTS" 버전이면 충분합니다)이 필요합니다. `start.bat` 실행 파일만 Windows 전용이고, 다른 운영체제에서는 명령어 한 줄로 서버를 시작합니다.
 - `npm install` 도, 사용 중 인터넷 연결도 필요 없습니다.
 - 최신 웹 브라우저 (Chrome, Edge, Firefox, Safari).
@@ -53,23 +53,30 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ## 설치와 실행
 
-### 방법 A: Windows, Node.js 설치 없이 (권장)
+### 방법 A: Windows, 파일 하나 (권장)
 
-1. [최신 릴리스](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) 페이지에서 **`EVE-Overview-Editor-…-windows-x64.zip`** (약 38 MB)을 내려받습니다.
-2. zip 파일을 우클릭 → **모두 압축 풀기…** 를 하고, 바탕화면이나 문서 같은 일반 폴더에 풉니다(*Program Files* 는 피하세요).
-3. 압축을 푼 폴더에서 **`start.bat`** 을 더블클릭합니다. 콘솔 창이 뜨고, 2초쯤 뒤 브라우저에서 `http://localhost:5173` 이 열립니다.
-4. **편집하는 동안 콘솔 창은 닫지 마세요.** 끝내려면 창을 닫거나 `Ctrl+C` 를 누릅니다.
+1. [최신 릴리스](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) 페이지에서 **`EVE-Overview-Editor.exe`** (약 92 MB, 편집기와 Node.js 가 들어 있음)를 내려받습니다.
+2. 전용 폴더(예: `문서\EVE-Overview-Editor`)에 두고 더블클릭합니다. 콘솔 창이 뜨고 브라우저에서 `http://localhost:5173` 이 열립니다.
+3. **편집하는 동안 콘솔 창은 닫지 마세요.** 끝내려면 창을 닫습니다.
 
-처음 실행할 때 Windows 가 보안 경고("Windows의 PC 보호" 또는 "파일 열기 - 보안 경고")를 띄울 수 있습니다. 파일에 코드 서명이 없기 때문입니다. 내려받은 파일을 믿는다면 **추가 정보 → 실행**(또는 **실행**)을 누르세요. 함께 들어 있는 `runtime\node.exe` 는 수정하지 않은 공식 Node.js 이고, 릴리스 페이지의 `SHA256SUMS.txt` 와 비교해 zip 파일을 확인할 수도 있습니다.
+처음 실행할 때 Windows 가 "PC 를 보호했습니다" 라고 할 수 있습니다. 파일에 코드 서명이 없기 때문입니다. 내려받은 파일을 믿는다면 **추가 정보 → 실행**을 누르세요. 릴리스 페이지의 `SHA256SUMS.txt` 와 비교해 파일을 확인할 수도 있습니다.
+
+설정(폴더 지정, 자동 백업)은 프로그램이 `.exe` 옆에 만드는 `EVE-Overview-Editor-data` 폴더에 저장됩니다. **업데이트:** `.exe` 를 새 파일로 바꾸면 되고, 데이터 폴더는 그대로 남습니다.
+
+### 방법 B: Windows, `start.bat` 이 든 zip
+
+파일 하나보다 폴더가 편하다면 같은 릴리스 페이지에서 **`EVE-Overview-Editor-…-windows-x64.zip`** (약 38 MB)을 내려받아 우클릭 → **모두 압축 풀기…** 로 바탕화면이나 문서 같은 일반 폴더에 풀고(*Program Files* 는 피하세요) **`start.bat`** 을 더블클릭하세요. 콘솔 창이 뜨고, 2초쯤 뒤 브라우저에서 `http://localhost:5173` 이 열립니다. 편집하는 동안 콘솔 창은 닫지 마세요. 끝내려면 창을 닫습니다.
+
+여기서도 Windows 보안 경고("Windows의 PC 보호" 또는 "파일 열기 - 보안 경고")가 뜰 수 있으니, 내려받은 파일을 믿는다면 **추가 정보 → 실행**(또는 **실행**)을 누르세요. 함께 들어 있는 `runtime\node.exe` 는 수정하지 않은 공식 Node.js 입니다.
 
 **업데이트:** 새 버전을 새 폴더에 푸세요. 백업과 폴더 설정을 이어 쓰려면 예전 폴더의 `backups\` 와 `config.json` 을 새 폴더로 복사하세요.
 
-### 방법 B: 소스 코드로 (모든 운영체제, Node.js 18+ 필요)
+### 방법 C: 소스 코드로 (모든 운영체제, Node.js 18+ 필요)
 
 1. **Node.js 설치**: [nodejs.org](https://nodejs.org) 에서 받아 기본 설정으로 설치합니다. 터미널에서 `node -v` 를 입력해 `v18` 이상이 나오면 됩니다.
 2. **편집기 내려받기**: [GitHub 페이지](https://github.com/LanturnHouse/eve-overview-editor)에서 초록색 **Code** 버튼 → **Download ZIP** 을 누르고, 원하는 곳(예: `C:\Tools\eve-overview-editor`)에 압축을 풉니다. git 을 쓴다면 `git clone https://github.com/LanturnHouse/eve-overview-editor.git`.
 3. **실행**
-   - **Windows**: **`start.bat`** 을 더블클릭합니다(방법 A 와 같은 실행 파일이며, 설치된 Node.js 를 씁니다).
+   - **Windows**: **`start.bat`** 을 더블클릭합니다(방법 B 와 같은 실행 파일이며, 설치된 Node.js 를 씁니다).
    - **macOS / Linux**: 폴더에서 터미널을 열고 `node server.mjs` 를 실행한 뒤, 브라우저에서 `http://localhost:5173` 을 엽니다.
 4. **편집하는 동안 콘솔 창은 닫지 마세요.** 끝내려면 창을 닫거나 `Ctrl+C` 를 누릅니다.
 
@@ -77,7 +84,9 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 다른 포트를 쓰려면 시작 전에 `PORT` 를 지정합니다. 예: `PORT=5200 node server.mjs` (macOS / Linux), `set PORT=5200 && node server.mjs` (Windows 명령 프롬프트), `$env:PORT=5200; node server.mjs` (PowerShell). `start.bat` 은 항상 5173 포트를 열기 때문에 이 경우에는 주소를 직접 입력하세요.
 
-바로 실행되는 Windows 내려받기 파일(방법 A)에는 PATH 에 `node` 가 없으므로, 압축을 푼 폴더에서 연 명령 프롬프트에서 함께 들어 있는 런타임을 쓰세요: `set PORT=5200 && runtime\node.exe server.mjs`.
+exe 하나(방법 A)라면 그 폴더에서 명령 프롬프트를 열어 `set PORT=5200 && EVE-Overview-Editor.exe` 를 실행하세요.
+
+zip(방법 B)에는 PATH 에 `node` 가 없으므로, 압축을 푼 폴더에서 연 명령 프롬프트에서 함께 들어 있는 런타임을 쓰세요: `set PORT=5200 && runtime\node.exe server.mjs`.
 
 ## 빠른 시작: 전체 작업 흐름
 
@@ -219,7 +228,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ![파일 · 고급 패널](docs/img/ko/advanced.png)
 
-- **오버뷰 폴더.** 게임이 내보내기/가져오기에 쓰는 폴더입니다. **폴더 변경…** 에서 다른 전체 경로를 입력합니다(선택은 서버 옆의 `config.json` 에 기억됩니다).
+- **오버뷰 폴더.** 게임이 내보내기/가져오기에 쓰는 폴더입니다. **폴더 변경…** 에서 다른 전체 경로를 입력합니다(선택은 서버 옆의 `config.json` 에, `.exe` 를 쓰면 `EVE-Overview-Editor-data` 폴더에 기억됩니다).
 - **마지막 저장 이후 변경 사항.** 무엇을 바꿨는지(프리셋, 탭, 깃발·배경, 컬럼, 라벨) 읽기 쉽게 요약합니다.
 - **정리 도구.** 더는 존재하지 않는 그룹 ID 제거, 어느 탭도 쓰지 않는 프리셋과 없는 프리셋을 가리키는 탭 찾기.
 - **기타 설정.** 게임의 *기타 오브젝트에도 적용* 옵션.
@@ -229,7 +238,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 ## 저장, 백업, 되돌리기
 
 - **저장을 누르기 전에는 아무것도 기록되지 않습니다.** 저장하지 않은 채 브라우저 탭을 닫으려 하면 경고가 뜹니다.
-- **저장**은 오버뷰 폴더의 열린 파일을 덮어씁니다. 그 전에 기존 파일이 편집기 폴더의 `backups/<이름>_<날짜>_<시간>.yaml` 로 복사됩니다. 백업은 *파일 · 고급*에서 지우기 전까지 계속 쌓입니다.
+- **저장**은 오버뷰 폴더의 열린 파일을 덮어씁니다. 그 전에 기존 파일이 편집기 폴더의 `backups/<이름>_<날짜>_<시간>.yaml` 로 복사됩니다(`.exe` 를 쓰면 `EVE-Overview-Editor-data\backups`). 백업은 *파일 · 고급*에서 지우기 전까지 계속 쌓입니다.
 - **다른 이름으로…** 는 입력한 파일 이름으로 기록합니다(이미 있는 다른 파일이면 덮어쓰기 전에 물어보고, 지금 열려 있는 파일의 이름을 쓰면 **저장**과 같습니다). **다운로드**는 대신 브라우저로 사본을 내려받습니다.
 - **되돌리기 / 다시 실행**은 모든 패널에서 동작합니다(`Ctrl+Z` / `Ctrl+Y` 또는 ↶ ↷ 버튼). 검색칸이나 태그 입력칸 같은 일반 입력칸 안에서는 브라우저 자체의 글자 되돌리기가 쓰입니다.
 - **줄바꿈 형식:** 저장으로 기존 파일을 덮어쓸 때는 그 파일의 줄바꿈 형식이 유지되고(CRLF 는 CRLF 그대로), 새 파일은 Windows 에서 CRLF 로 만들어지며, **다운로드**는 항상 LF 입니다. 편집기가 건드리지 않은 내용은 그대로 다시 기록됩니다.
@@ -256,8 +265,9 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 | 증상 | 해결 |
 |---|---|
-| `start.bat` 이 *Node.js is required* 라고 함 | 소스 코드로 실행하고 있어서 Node.js 가 필요한 경우입니다. [릴리스 페이지](https://github.com/LanturnHouse/eve-overview-editor/releases/latest)에서 바로 실행되는 zip 을 받거나(방법 A), [nodejs.org](https://nodejs.org) 에서 Node.js 를 설치하고 창을 닫은 뒤 `start.bat` 을 다시 실행하세요. |
+| `start.bat` 이 *Node.js is required* 라고 함 | 소스 코드로 실행하고 있어서 Node.js 가 필요한 경우입니다. [릴리스 페이지](https://github.com/LanturnHouse/eve-overview-editor/releases/latest)에서 바로 실행되는 exe 나 zip 을 받거나(방법 A 또는 B), [nodejs.org](https://nodejs.org) 에서 Node.js 를 설치하고 창을 닫은 뒤 `start.bat` 을 다시 실행하세요. |
 | Windows 가 *Windows의 PC 보호* / *파일 열기 - 보안 경고* 를 띄움 | 파일에 코드 서명이 없어서 나오는 경고입니다. 내려받은 파일을 믿는다면 **추가 정보 → 실행**(또는 **실행**)을 누르세요. |
+| `.exe` 의 콘솔 창이 메시지를 띄우고 닫힘 | 편집기가 이미 실행 중이면 다시 시작해도 브라우저에서 그 편집기를 열어 주고 몇 초 뒤 닫힙니다. 문제가 생긴 경우에는 메시지를 읽을 수 있게 창이 15초쯤 남아 있습니다. |
 | *Port 5173 is already in use* | 편집기가 이미 실행 중일 가능성이 큽니다. `http://localhost:5173` 을 여세요. 또는 다른 포트로 시작합니다([설치와 실행](#설치와-실행) 참고). |
 | 브라우저가 자동으로 열리지 않음 | `http://localhost:5173` 을 직접 여세요. |
 | *오버뷰 폴더를 찾지 못했습니다* | 게임에서 먼저 한 번 내보내거나, **파일 · 고급 → 폴더 변경…** 에서 전체 경로(예: `C:\Users\내이름\Documents\EVE\Overview`)를 입력하세요. 문서 폴더가 OneDrive 에 있어도 편집기가 그 위치를 함께 확인합니다. |
@@ -270,13 +280,13 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ## 자주 묻는 질문
 
-**Node.js 를 꼭 설치해야 하나요?** [릴리스 페이지](https://github.com/LanturnHouse/eve-overview-editor/releases/latest)의 Windows 용 내려받기 파일에는 필요한 Node.js 가 함께 들어 있어서 PC 에 아무것도 설치되지 않습니다(지우려면 폴더만 삭제하세요). 소스 코드로 실행하거나 macOS / Linux 에서만 Node.js 가 필요합니다.
+**Node.js 를 꼭 설치해야 하나요?** [릴리스 페이지](https://github.com/LanturnHouse/eve-overview-editor/releases/latest)의 Windows 용 내려받기 파일(exe, zip)에는 각각 Node.js 가 함께 들어 있습니다. 소스 코드로 실행하거나 macOS / Linux 에서만 Node.js 가 필요합니다. 어느 쪽이든 설치 프로그램은 없습니다. 지우려면 `.exe`(와 `EVE-Overview-Editor-data` 폴더) 또는 압축을 푼 폴더를 삭제하면 됩니다.
 
 **내 설정이 망가질 걱정은 없나요?** 없습니다. 저장할 때마다 먼저 백업하고, 모르는 설정은 그대로 보존하며, 저장 전에 *YAML 원문*에서 정확한 결과를 확인할 수 있습니다.
 
 **게임을 바꾸거나 게임과 통신하나요?** 아니요. 게임이 내보내고 가져오는 YAML 파일만 편집합니다. 클라이언트나 게임 네트워크 통신에는 전혀 손대지 않습니다.
 
-**인터넷이 필요한가요?** 아니요. 필요한 것은 모두 내려받은 폴더 안에 있습니다. 그룹/카테고리 이름은 공개 ESI 데이터를 앱에 내장한 것입니다.
+**인터넷이 필요한가요?** 아니요. 필요한 것은 모두 내려받은 파일 안에 있습니다. 그룹/카테고리 이름은 공개 ESI 데이터를 앱에 내장한 것입니다.
 
 **내 데이터가 어디로 전송되나요?** 어디로도 가지 않습니다. 서버는 `127.0.0.1` 에서만 응답하고, 다른 호스트 이름으로 온 요청과 편집기 화면이 아닌 곳에서 오는 변경 요청(저장, 삭제, 폴더 변경)은 거부하므로 다른 웹사이트가 내 파일을 바꿀 수 없습니다. 인터넷으로는 아무것도 전송하지 않습니다.
 
@@ -294,7 +304,9 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 - 번역은 `public/js/locales/` 에 있습니다(영어·한국어·일본어·러시아어·중국어). 개선 PR 을 환영합니다. 일본어·러시아어·중국어의 상태/컬럼 이름은 번역이라 게임의 공식 용어와 다를 수 있습니다.
 - `node tools/build-data.mjs` 는 ESI 에서 그룹/카테고리 이름을 다시 받아 `public/data/groups.json` 에 저장합니다.
 - `node tools/roundtrip.mjs <파일>` 은 파일을 읽고 다시 쓴 결과가 원본과 동일한지 비교합니다.
-- `node tools/make-release.mjs` 는 `dist/` 에 Windows 휴대용 zip 을 만듭니다: 앱, 스크립트를 실행한 Node.js 런타임(`runtime\node.exe` 로 복사), 간단한 안내문. `v1.0.0` 같은 태그를 푸시하면 `.github/workflows/release.yml` 이 공식 Node.js 로 zip 을 만들어 `SHA256SUMS.txt` 와 함께 GitHub Release 에 올립니다.
+- `node tools/make-release.mjs` 는 `dist/` 에 Windows 휴대용 zip 을 만듭니다: 앱, 스크립트를 실행한 Node.js 런타임(`runtime\node.exe` 로 복사), 간단한 안내문.
+- `node tools/make-exe.mjs` 는 Node.js 의 [단일 실행 파일(SEA)](https://nodejs.org/api/single-executable-applications.html) 기능으로 `dist/EVE-Overview-Editor.exe` 를 만들고(Node.js 22 이상 필요, `npx` 로 [postject](https://github.com/nodejs/postject) 를 받아 씁니다) 한 번 실행해서 동작을 확인합니다. `server.mjs` 는 exe 안에서 실행 중임을 알아채고 `public/` 을 exe 안에서 읽으며, 설정은 exe 옆의 `EVE-Overview-Editor-data` 에 저장합니다.
+- `v1.0.0` 같은 태그를 푸시하면 `.github/workflows/release.yml` 이 공식 Node.js 로 두 파일을 만들어 `SHA256SUMS.txt` 와 함께 GitHub Release 에 올립니다.
 - 상태 ID 이름은 [kormat/eve-overview-tool](https://github.com/kormat/eve-overview-tool) 및 [Z-S Overview Customizer](https://github.com/Arziel1992/Z-S-Overview-Customizer) 의 공개 자료를 참고했습니다. 색 이름의 미리보기 색은 근사값입니다.
 
 ## CCP notice
@@ -305,3 +317,4 @@ This is an unofficial, free, non-commercial fan tool. This material is used with
 
 - `public/img/regions/` 의 배경 이미지는 EVE Online 의 이미지로 CCP hf 의 저작물입니다. 이 저장소의 MIT 라이선스(소스 코드 한정)가 적용되지 않으며, CCP 의 콘텐츠 이용 정책에 따라 무료·비영리 목적(선박 라벨 가독성 미리보기)으로만 사용합니다. CCP 가 요청하면 제거합니다. `docs/img/` 의 스크린샷에도 이 배경이 나오고 영상 썸네일에는 EVE Online 게임 화면이 들어 있으며, 모두 같은 조건으로 사용합니다.
 - 코드는 MIT 라이선스입니다. 번들된 [js-yaml](https://github.com/nodeca/js-yaml) (MIT) 이 `public/vendor/` 에 포함되어 있습니다.
+- Windows zip 에는 수정하지 않은 공식 [Node.js](https://nodejs.org) 런타임(`runtime\node.exe`)이 들어 있습니다. 단일 `.exe` 는 공식 Node.js 런타임에 편집기를 심고 Node 의 코드 서명을 제거해 만든 것입니다. Node.js 는 MIT 라이선스(서드파티 구성요소 포함, <https://github.com/nodejs/node/blob/main/LICENSE>)이며, 라이선스 문구는 릴리스마다 `NODE-LICENSE.txt` 로 첨부됩니다.
