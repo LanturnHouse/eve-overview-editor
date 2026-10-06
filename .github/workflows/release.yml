@@ -51,7 +51,11 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: windows-downloads
-          path: dist/*
+          path: |
+            dist/EVE-Overview-Editor.exe
+            dist/EVE-Overview-Editor-*-windows-x64.zip
+            dist/SHA256SUMS.txt
+            dist/NODE-LICENSE.txt
 
       - name: Publish the release
         if: startsWith(github.ref, 'refs/tags/')
@@ -66,8 +70,10 @@ jobs:
 
           **Windows:** 아래의 **EVE-Overview-Editor.exe** 를 받아 더블클릭하세요("Source code" 가 아닙니다). Node.js 가 들어 있습니다. 코드 서명이 없어서 Windows 가 "PC 를 보호했습니다" 라고 하면 "추가 정보" → "실행"을 누르세요. 폴더 형태가 좋다면 **${NAME}** 을 받아 압축을 풀고 \`start.bat\` 을 실행하세요.
           EOF
+          # 올릴 파일을 하나씩 지정한다 (dist/ 안의 다른 것이 섞여 올라가지 않게)
+          FILES=(dist/EVE-Overview-Editor.exe dist/EVE-Overview-Editor-*-windows-x64.zip dist/SHA256SUMS.txt dist/NODE-LICENSE.txt)
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+            gh release upload "$GITHUB_REF_NAME" "${FILES[@]}" --clobber
           else
-            gh release create "$GITHUB_REF_NAME" dist/* --title "EVE Overview Editor $GITHUB_REF_NAME" --notes "$NOTES" --generate-notes
+            gh release create "$GITHUB_REF_NAME" "${FILES[@]}" --title "EVE Overview Editor $GITHUB_REF_NAME" --notes "$NOTES" --generate-notes
           fi
