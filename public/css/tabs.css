@@ -46,4 +46,5 @@
 .tb-sym { all: unset; box-sizing: border-box; cursor: pointer; height: 32px; display: grid; place-items: center; font-size: 17px; line-height: 1; color: #e0e0e0; background: #0b0d11; border: 1px solid var(--line); border-radius: 4px; font-family: 'Segoe UI Symbol', 'Arial Unicode MS', 'Malgun Gothic', sans-serif; }
 .tb-sym:hover { background: var(--accent-dim); border-color: var(--accent); }
 .tb-sym-hint { margin: 6px 0 0; }
+.tb-sym-lang { margin: 8px 0 0; padding: 6px 9px; border-left: 3px solid var(--accent); background: var(--accent-dim); border-radius: 0 4px 4px 0; line-height: 1.5; }
 .tb-sym-empty { grid-column: 1 / -1; padding: 6px 2px; }

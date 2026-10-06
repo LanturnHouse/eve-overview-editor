@@ -390,7 +390,7 @@ export function createMarkupToolbar({ multiline = false } = {}) {
         h('span', { class: 'mk-glabel' }, t('editor.insert')),
         brBtn, symBtn),
       h('div', { class: 'mk-group mk-right' }, rawToggle)),
-    h('p', { class: 'hint mk-hint' }, t('editor.hint')),
+    h('p', { class: 'hint mk-hint' }, t('editor.hint'), ' ', t('editor.hintLang')),
     picker);
 
   // 선택 영역의 서식 상태를 툴바에 반영 (굵게/기울임/밑줄 눌림, 팔레트 선택 표시)
