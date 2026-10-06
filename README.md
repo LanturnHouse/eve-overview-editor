@@ -55,7 +55,7 @@ The interface is available in **English · 한국어 · 日本語 · Русск�
 
 ### Option A: Windows, one file (recommended)
 
-1. Open the [latest release](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) and download **`EVE-Overview-Editor.exe`** (about 92 MB; it contains the editor and Node.js).
+1. Open the [latest release](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) and download **`EVE-Overview-Editor.exe`** (about 95 MB; it contains the editor and Node.js).
 2. Put it in a folder of its own (for example `Documents\EVE-Overview-Editor`) and double-click it. A console window opens and your browser opens `http://localhost:5173`.
 3. **Leave the console window open while you edit.** Close it to stop the editor.
 
@@ -65,7 +65,7 @@ Your settings (the folder setting and the automatic backups) are kept in an `EVE
 
 ### Option B: Windows, zip with `start.bat`
 
-Prefer a folder over a single file? Download **`EVE-Overview-Editor-…-windows-x64.zip`** (about 38 MB) from the same release page, right-click it → **Extract All…** into a normal folder such as your Desktop or Documents (not *Program Files*), and double-click **`start.bat`**. A console window opens and, two seconds later, your browser opens `http://localhost:5173`. Leave the console window open while you edit; close it to stop.
+Prefer a folder over a single file? Download **`EVE-Overview-Editor-…-windows-x64.zip`** (about 40 MB) from the same release page, right-click it → **Extract All…** into a normal folder such as your Desktop or Documents (not *Program Files*), and double-click **`start.bat`**. A console window opens and, two seconds later, your browser opens `http://localhost:5173`. Leave the console window open while you edit; close it to stop.
 
 Windows may show a security warning here too ("Windows protected your PC" or "Open File - Security Warning"); choose **More info → Run anyway** (or **Run**) if you trust the download. The bundled `runtime\node.exe` is the unmodified official Node.js.
 
