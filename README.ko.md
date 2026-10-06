@@ -10,9 +10,9 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 > 비공식 무료 팬 도구이며 CCP Games 와 무관합니다. [CCP notice](#ccp-notice) 참고.
 
-[![영상 튜토리얼 보기](docs/img/video-thumbnail.jpg)](https://youtu.be/WOjL-5-N6YE)
+[![영상 튜토리얼 보기](docs/img/video-thumbnail.jpg)](https://youtu.be/CwOz4BgNyzg)
 
-▶ **[영상 튜토리얼](https://youtu.be/WOjL-5-N6YE)** (4분, 영어 해설, 한국어·영어·일본어·러시아어·중국어 자막).
+▶ **[영상 튜토리얼](https://youtu.be/CwOz4BgNyzg)** (4분, 영어 해설, 한국어·영어·일본어·러시아어·중국어 자막).
 
 ## 목차
 
