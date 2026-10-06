@@ -132,7 +132,7 @@ function backupsCard() {
             try { await serverApi(`/api/backup?name=${encodeURIComponent(b.name)}`, { method: 'DELETE' }); toast(t('advanced.backups.deleted'), 'ok', 2000); draw(); }
             catch (e) { toast(errMessage(e), 'error', 5000); }
           } }, t('advanced.backups.delete'))))))),
-      backups.length > 50 ? h('p', { class: 'hint' }, `… +${backups.length - 50}`) : null);
+      ...(backups.length > 50 ? [h('p', { class: 'hint' }, `… +${backups.length - 50}`)] : []));
   }).catch((e) => box.replaceChildren(h('p', { class: 'warn' }, errMessage(e))));
   draw();
   return h('section', { class: 'card' }, h('h3', {}, t('advanced.backups.title')), box);

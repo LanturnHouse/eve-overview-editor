@@ -304,8 +304,8 @@ export default async function render(root) {
           h('span', { class: 'lb-sc-name' }, bgName(bg)));
       });
       out.replaceChildren(
-        mc && fix ? h('p', { class: 'warn lb-scheme-warn' }, t('labels.scheme.lowWarn', { worst: pct(mc.worst) }), ' ',
-          fix !== mainHex ? h('button', { type: 'button', class: 'btn small', onclick: () => { scheme.hex = fix; saveScheme(); colorIn.value = `#${fix}`; hexIn.value = `#${fix}`; drawOut(); } }, t('labels.scheme.lighten', { hex: fix })) : null) : null,
+        ...(mc && fix ? [h('p', { class: 'warn lb-scheme-warn' }, t('labels.scheme.lowWarn', { worst: pct(mc.worst) }), ' ',
+          fix !== mainHex ? h('button', { type: 'button', class: 'btn small', onclick: () => { scheme.hex = fix; saveScheme(); colorIn.value = `#${fix}`; hexIn.value = `#${fix}`; drawOut(); } }, t('labels.scheme.lighten', { hex: fix })) : null)] : []),
         h('table', { class: 'grid lb-scheme-table' },
           h('thead', {}, h('tr', {}, h('th', {}, t('labels.scheme.colPiece')), h('th', {}, t('labels.scheme.colCurrent')), h('th', {}), h('th', {}, t('labels.scheme.colNew')), h('th', {}, t('labels.scheme.colRead')))),
           h('tbody', {}, rows)),
