@@ -55,7 +55,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ### 방법 A: Windows, 파일 하나 (권장)
 
-1. [최신 릴리스](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) 페이지에서 **`EVE-Overview-Editor.exe`** (약 92 MB, 편집기와 Node.js 가 들어 있음)를 내려받습니다.
+1. [최신 릴리스](https://github.com/LanturnHouse/eve-overview-editor/releases/latest) 페이지에서 **`EVE-Overview-Editor.exe`** (약 95 MB, 편집기와 Node.js 가 들어 있음)를 내려받습니다.
 2. 전용 폴더(예: `문서\EVE-Overview-Editor`)에 두고 더블클릭합니다. 콘솔 창이 뜨고 브라우저에서 `http://localhost:5173` 이 열립니다.
 3. **편집하는 동안 콘솔 창은 닫지 마세요.** 끝내려면 창을 닫습니다.
 
@@ -65,7 +65,7 @@ EVE Online 의 오버뷰 설정을 게임 안에서 하려면 탭도 많고 목�
 
 ### 방법 B: Windows, `start.bat` 이 든 zip
 
-파일 하나보다 폴더가 편하다면 같은 릴리스 페이지에서 **`EVE-Overview-Editor-…-windows-x64.zip`** (약 38 MB)을 내려받아 우클릭 → **모두 압축 풀기…** 로 바탕화면이나 문서 같은 일반 폴더에 풀고(*Program Files* 는 피하세요) **`start.bat`** 을 더블클릭하세요. 콘솔 창이 뜨고, 2초쯤 뒤 브라우저에서 `http://localhost:5173` 이 열립니다. 편집하는 동안 콘솔 창은 닫지 마세요. 끝내려면 창을 닫습니다.
+파일 하나보다 폴더가 편하다면 같은 릴리스 페이지에서 **`EVE-Overview-Editor-…-windows-x64.zip`** (약 40 MB)을 내려받아 우클릭 → **모두 압축 풀기…** 로 바탕화면이나 문서 같은 일반 폴더에 풀고(*Program Files* 는 피하세요) **`start.bat`** 을 더블클릭하세요. 콘솔 창이 뜨고, 2초쯤 뒤 브라우저에서 `http://localhost:5173` 이 열립니다. 편집하는 동안 콘솔 창은 닫지 마세요. 끝내려면 창을 닫습니다.
 
 여기서도 Windows 보안 경고("Windows의 PC 보호" 또는 "파일 열기 - 보안 경고")가 뜰 수 있으니, 내려받은 파일을 믿는다면 **추가 정보 → 실행**(또는 **실행**)을 누르세요. 함께 들어 있는 `runtime\node.exe` 는 수정하지 않은 공식 Node.js 입니다.
 
