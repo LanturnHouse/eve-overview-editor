@@ -100,22 +100,41 @@ function settingsCard(m) {
 }
 
 // ---- 백업 ----
+const formatSize = (bytes) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 function backupsCard() {
   const box = h('div', {}, h('p', { class: 'muted' }, t('advanced.backups.loading')));
-  serverApi('/api/backups').then(({ backups }) => {
-    box.replaceChildren(backups.length
-      ? h('table', { class: 'grid' }, h('tbody', {}, backups.slice(0, 30).map((b) => h('tr', {},
+  const draw = () => serverApi('/api/backups').then(({ backups }) => {
+    if (!backups.length) { box.replaceChildren(h('p', { class: 'muted' }, t('advanced.backups.none'))); return; }
+    const total = backups.reduce((sum, b) => sum + (b.size || 0), 0);
+    box.replaceChildren(
+      h('div', { class: 'toolbar' },
+        h('span', { class: 'chip' }, t('advanced.backups.count', { n: backups.length, size: formatSize(total) })),
+        h('span', { class: 'grow' }),
+        h('button', { class: 'btn danger small', onclick: async () => {
+          if (!(await confirmDialog(t('advanced.backups.confirmDeleteAll', { n: backups.length }), { ok: t('advanced.backups.deleteAll'), danger: true }))) return;
+          try { const r = await serverApi('/api/backups', { method: 'DELETE' }); toast(t('advanced.backups.deletedAll', { n: r.deleted }), 'ok'); draw(); }
+          catch (e) { toast(errMessage(e), 'error', 5000); }
+        } }, t('advanced.backups.deleteAll'))),
+      h('table', { class: 'grid' }, h('tbody', {}, backups.slice(0, 50).map((b) => h('tr', {},
         h('td', { class: 'mono small' }, b.name), h('td', { class: 'muted small' }, formatDate(b.mtime)),
-        h('td', {}, h('button', { class: 'btn small', onclick: async () => {
-          if (store.dirty && !(await confirmDialog(t('advanced.backups.confirmLoad'), { ok: t('advanced.backups.load'), danger: true }))) return;
-          try {
-            const r = await serverApi(`/api/backup?name=${encodeURIComponent(b.name)}`);
-            store.load(parseOverview(r.text), null);
-            toast(t('advanced.backups.loaded'), 'info', 5000);
-          } catch (e) { toast(errMessage(e), 'error', 5000); }
-        } }, t('advanced.backups.load')))))))
-      : h('p', { class: 'muted' }, t('advanced.backups.none')));
+        h('td', { class: 'muted small' }, formatSize(b.size || 0)),
+        h('td', { class: 'ad-actions' },
+          h('button', { class: 'btn small', onclick: async () => {
+            if (store.dirty && !(await confirmDialog(t('advanced.backups.confirmLoad'), { ok: t('advanced.backups.load'), danger: true }))) return;
+            try {
+              const r = await serverApi(`/api/backup?name=${encodeURIComponent(b.name)}`);
+              store.load(parseOverview(r.text), null);
+              toast(t('advanced.backups.loaded'), 'info', 5000);
+            } catch (e) { toast(errMessage(e), 'error', 5000); }
+          } }, t('advanced.backups.load')),
+          h('button', { class: 'btn small danger', title: t('advanced.backups.delete'), onclick: async () => {
+            if (!(await confirmDialog(t('advanced.backups.confirmDelete', { name: b.name }), { ok: t('advanced.backups.delete'), danger: true }))) return;
+            try { await serverApi(`/api/backup?name=${encodeURIComponent(b.name)}`, { method: 'DELETE' }); toast(t('advanced.backups.deleted'), 'ok', 2000); draw(); }
+            catch (e) { toast(errMessage(e), 'error', 5000); }
+          } }, t('advanced.backups.delete'))))))),
+      backups.length > 50 ? h('p', { class: 'hint' }, `… +${backups.length - 50}`) : null);
   }).catch((e) => box.replaceChildren(h('p', { class: 'warn' }, errMessage(e))));
+  draw();
   return h('section', { class: 'card' }, h('h3', {}, t('advanced.backups.title')), box);
 }
 

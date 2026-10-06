@@ -99,17 +99,27 @@ async function api(req, res, url) {
     }
   }
 
+  // 자동 백업: 목록(GET) / 전체 삭제(DELETE). backups/ 폴더 안의 .yaml 파일만 다룬다.
   if (url.pathname === '/api/backups') {
-    if (!fs.existsSync(BACKUPS)) return json(res, 200, { backups: [] });
-    const backups = fs.readdirSync(BACKUPS).filter(isYamlName)
-      .map((name) => ({ name, mtime: fs.statSync(path.join(BACKUPS, name)).mtimeMs }))
+    const names = fs.existsSync(BACKUPS) ? fs.readdirSync(BACKUPS).filter(isYamlName) : [];
+    if (req.method === 'DELETE') {
+      let deleted = 0;
+      for (const name of names) { try { fs.unlinkSync(path.join(BACKUPS, name)); deleted++; } catch { /* 사용 중이면 건너뜀 */ } }
+      return json(res, 200, { deleted });
+    }
+    const backups = names
+      .map((name) => { const st = fs.statSync(path.join(BACKUPS, name)); return { name, mtime: st.mtimeMs, size: st.size }; })
       .sort((a, b) => b.mtime - a.mtime);
     return json(res, 200, { backups });
   }
+  // 백업 한 개: 내용 읽기(GET) / 삭제(DELETE)
   if (url.pathname === '/api/backup') {
     const name = q.get('name');
-    if (!isYamlName(name) || !fs.existsSync(path.join(BACKUPS, name))) return json(res, 404, { error: 'File not found', code: 'not_found' });
-    return json(res, 200, { name, text: fs.readFileSync(path.join(BACKUPS, name), 'utf8') });
+    if (!isYamlName(name)) return json(res, 400, { error: 'Invalid file name', code: 'bad_filename' });
+    const bp = path.join(BACKUPS, name);
+    if (!fs.existsSync(bp)) return json(res, 404, { error: 'File not found', code: 'not_found' });
+    if (req.method === 'DELETE') { fs.unlinkSync(bp); return json(res, 200, { deleted: 1 }); }
+    return json(res, 200, { name, text: fs.readFileSync(bp, 'utf8') });
   }
   return json(res, 404, { error: 'Not found', code: 'not_found' });
 }
