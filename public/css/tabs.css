@@ -34,15 +34,3 @@
 .tb-dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; margin: 10px 0 0; }
 .tb-dl dt { color: var(--muted); }
 .tb-dl dd { margin: 0; word-break: break-all; }
-
-/* 이름 스타일 일괄 정리 도구 */
-.tb-styler { margin-bottom: 14px; }
-.tb-styler > summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
-.tb-style-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; }
-.tb-style-choice { all: unset; box-sizing: border-box; cursor: pointer; display: flex; flex-direction: column; gap: 4px; padding: 10px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--panel2); }
-.tb-style-choice:hover { border-color: var(--muted); }
-.tb-style-choice:focus-visible { outline: 2px solid var(--blue); outline-offset: 1px; }
-.tb-style-choice.active { border-color: var(--accent); background: var(--accent-dim); }
-.tb-style-sample { padding: 6px 12px; width: fit-content; }
-.tb-style-bar { margin: 4px 0 10px; }
-.tb-style-bar .tb-bar-item { cursor: default; }
