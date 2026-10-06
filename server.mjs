@@ -123,7 +123,7 @@ function serveStatic(req, res, url) {
   fs.createReadStream(p).pipe(res);
 }
 
-http.createServer(async (req, res) => {
+const server = http.createServer(async (req, res) => {
   try {
     // DNS rebinding 방지: localhost 계열 Host 만 허용
     if (!/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(req.headers.host || '')) { res.writeHead(403); return res.end(); }
@@ -133,7 +133,16 @@ http.createServer(async (req, res) => {
   } catch (e) {
     json(res, 500, { error: String(e.message || e) });
   }
-}).listen(PORT, HOST, () => {
-  console.log(`EVE 오버뷰 편집기: http://localhost:${PORT}`);
-  console.log(`오버뷰 폴더: ${dir}`);
+});
+server.on('error', (e) => {
+  if (e.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} is already in use - the editor is probably already running.`);
+    console.log(`Open http://localhost:${PORT} in your browser (or set PORT=xxxx to use another port).`);
+    process.exit(0);
+  }
+  throw e;
+});
+server.listen(PORT, HOST, () => {
+  console.log(`EVE overview editor: http://localhost:${PORT}`);
+  console.log(`Overview folder: ${dir}`);
 });
