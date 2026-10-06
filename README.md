@@ -10,9 +10,9 @@ It works on the YAML file the game itself exports, so it never touches the game 
 
 > Unofficial, free, non-commercial fan tool. Not affiliated with CCP Games. See the [CCP notice](#ccp-notice).
 
-[![Watch the video tutorial](docs/img/video-thumbnail.jpg)](https://youtu.be/WOjL-5-N6YE)
+[![Watch the video tutorial](docs/img/video-thumbnail.jpg)](https://youtu.be/CwOz4BgNyzg)
 
-▶ **[Video tutorial](https://youtu.be/WOjL-5-N6YE)** (4 minutes, English narration, subtitles in English, 한국어, 日本語, Русский and 中文).
+▶ **[Video tutorial](https://youtu.be/CwOz4BgNyzg)** (4 minutes, English narration, subtitles in English, 한국어, 日本語, Русский and 中文).
 
 ## Contents
 
