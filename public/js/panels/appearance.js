@@ -4,7 +4,7 @@ import { h, makeSortable, moveItem, gripHandle } from '../ui.js';
 import { STATES, STATE_KINDS, APPEARANCE_STATE_IDS, stateName, stateNameEn, COLOR_NAMES, COLOR_KO, colorCss } from '../data.js';
 
 const MODES = {
-  flag: { label: '깃발', what: '왼쪽 색 깃발' },
+  flag: { label: '깃발', what: '아이콘 우하단의 작은 색 깃발' },
   background: { label: '배경', what: '줄 배경색' },
 };
 let mode = 'flag'; // 다시 그려져도 서브탭 유지
@@ -48,7 +48,7 @@ export default async function render(root) {
   root.append(
     h('div', { class: 'panel-head' },
       h('h2', {}, '깃발 · 배경 색상'),
-      h('p', {}, '오버뷰 각 줄의 상태 깃발(왼쪽 색 태그)과 줄 배경색의 우선순위·색·깜빡임을 정합니다.')),
+      h('p', {}, '오버뷰 각 줄의 상태 깃발(아이콘 우하단에 작게 표시되는 색 표시)과 줄 배경색의 우선순위·색·깜빡임을 정합니다.')),
     tabBar, body);
   drawTabs();
 
@@ -111,8 +111,9 @@ function previewRow(p, id, dist, pilot) {
   const isBg = p === 'background';
   return h('div', { class: `ap-prow${blink ? ' blink' : ''}` },
     isBg && css ? h('span', { class: 'ap-prow-bg', style: { background: css } }) : null,
-    h('span', { class: 'ap-prow-flag' }, !isBg && css ? h('span', { class: 'ap-flagbox', style: { background: css } }) : null),
-    h('span', { class: 'ap-prow-icon' }, '▲'),
+    // 게임에서 깃발은 아이콘의 우하단에 작게 겹쳐 표시된다
+    h('span', { class: 'ap-prow-icon' }, '▲',
+      !isBg && css ? h('span', { class: 'ap-flagbox', style: { background: css } }) : null),
     h('span', { class: 'ap-prow-dist' }, dist),
     h('span', { class: 'ap-prow-name' }, pilot),
     h('span', { class: 'ap-prow-state' }, id === null ? '' : `${stateName(id)}${blink ? ' · 깜빡임' : ''}`));
