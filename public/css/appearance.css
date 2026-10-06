@@ -1,8 +1,6 @@
 /* appearance 패널 전용 스타일 (접두사 ap-) */
 .ap-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; }
 @media (max-width: 1100px) { .ap-layout { grid-template-columns: minmax(0, 1fr); } }
-.ap-side { position: sticky; top: 0; }
-.ap-side .hint { margin: 2px 0 8px; }
 .ap-hint { margin: 0; flex: 1; min-width: 200px; }
 .ap-list { display: flex; flex-direction: column; gap: 3px; }
 .ap-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel2); }
@@ -10,26 +8,34 @@
 .ap-row:focus-within { border-color: var(--blue); }
 .ap-row.inactive .ap-name, .ap-row.inactive .swatch, .ap-row.inactive .ap-kind { opacity: .45; }
 .ap-num { width: 22px; text-align: right; color: var(--muted); font-size: 12px; font-family: var(--mono); flex: none; }
-.ap-name { flex: 1 1 120px; min-width: 0; }
+.ap-name { flex: 1 1 160px; min-width: 0; }
 .ap-ko { display: flex; gap: 6px; align-items: center; }
-.ap-en { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ap-en { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; gap: 6px; align-items: center; }
+.ap-en .ap-kind { flex: none; font-size: 10px; padding: 0 5px; }
 .ap-kind { flex: none; }
-.ap-color { width: 200px; min-width: 0; flex: none; }
+.ap-color { width: 176px; min-width: 0; flex: none; }
 .ap-moves { display: inline-flex; gap: 2px; flex: none; }
 .ap-active, .ap-blink { flex: none; }
 @media (max-width: 900px) { .ap-row { flex-wrap: wrap; } .ap-color { width: 140px; } }
 
-/* 미리보기 */
-.ap-preview { padding: 6px 0; }
-.ap-prev-title { padding: 0 12px 6px; font-size: 11px; }
-.ap-prow { position: relative; display: flex; align-items: center; gap: 8px; padding: 2px 8px 2px 4px; min-height: 22px; white-space: nowrap; }
-.ap-prow > * { position: relative; }
+/* 미리보기: 좌측 목록 전체를 격자(아이콘 | 거리 | 이름 | 상태명)로 정렬해서 보여준다 */
+.ap-side { position: sticky; top: 12px; max-height: calc(100vh - 36px); display: flex; flex-direction: column; min-width: 0; }
+.ap-side h3 { margin-bottom: 2px; }
+.ap-side-what { margin: 0 0 4px; font-size: 13px; color: var(--accent); }
+.ap-side .hint { margin: 2px 0 8px; }
+.ap-side-note { margin: 8px 0 0; }
+.ap-preview { position: relative; padding: 4px 0; overflow-y: auto; overflow-x: hidden; flex: 1 1 auto; min-height: 120px; }
+.ap-prow { position: relative; display: grid; grid-template-columns: 20px 58px minmax(0, 1fr) minmax(0, 1.3fr); align-items: center; column-gap: 8px; padding: 3px 10px; min-height: 27px; }
+.ap-prow > * { position: relative; min-width: 0; }
 .ap-prow > .ap-prow-bg { position: absolute; inset: 0; opacity: .55; }
-.ap-prow-icon { flex: none; width: 18px; height: 18px; display: grid; place-items: center; color: #9a9a9a; font-size: 11px; background: #1a1f26; border: 1px solid #2c333d; }
+.ap-prow.hl { outline: 1px solid var(--accent); outline-offset: -1px; background: #ffffff10; }
+.ap-prow.off > :not(.ap-prow-bg) { opacity: .45; }
+.ap-prow-icon { width: 18px; height: 18px; display: grid; place-items: center; color: #9a9a9a; font-size: 11px; background: #1a1f26; border: 1px solid #2c333d; }
 .ap-flagbox { position: absolute; right: -2px; bottom: -2px; width: 7px; height: 7px; border: 1px solid #000b; box-sizing: border-box; }
-.ap-prow-dist { width: 56px; text-align: right; color: #b4b4b4; }
-.ap-prow-name { flex: 1; overflow: hidden; text-overflow: ellipsis; color: #e6e6e6; }
-.ap-prow-state { color: #8a8a8a; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+.ap-prow-dist { text-align: right; color: #b4b4b4; white-space: nowrap; }
+.ap-prow-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #e6e6e6; }
+.ap-prow-state { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8a8a8a; font-size: 11px; text-align: left; }
 @keyframes ap-blink { 0%, 100% { opacity: 1; } 50% { opacity: .2; } }
 .ap-prow.blink .ap-prow-bg, .ap-prow.blink .ap-flagbox { animation: ap-blink 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .ap-prow.blink .ap-prow-bg, .ap-prow.blink .ap-flagbox { animation: none; } }
+@media (max-width: 1100px) { .ap-side { position: static; max-height: none; } .ap-preview { max-height: 420px; } }

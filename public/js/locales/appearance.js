@@ -3,6 +3,8 @@ import { defineMessages } from '../i18n.js';
 // appearance: 문구는 en/ko/ja/ru/zh 다섯 언어를 함께 정의한다.
 defineMessages('appearance', {
   en: {
+    previewOff: 'not enabled',
+    previewEach: 'Each row shows one state on its own, in priority order. In the game, a row uses the highest-priority state it matches.',
     'mode.flag': 'Flag',
     'mode.background': 'Background',
     'what.flag': 'Small colored flag at the icon\'s bottom-right',
@@ -12,7 +14,6 @@ defineMessages('appearance', {
     intro: 'Set the priority, color and blinking of the status flag (the small colored marker at the bottom-right of the icon) and of the row background for each Overview row.',
     listAria: '{mode} priority list',
     previewAria: '{mode} preview',
-    previewTitle: '{what} - top {n} active states by priority',
     sampleNone: 'Ordinary row with no state',
     counter: 'Active {a} / Total {n}',
     priorityHint: 'Priority runs top to bottom: the color of the first (lowest-numbered) active state applies first. Drag rows or use ▲▼ to reorder.',
@@ -36,6 +37,8 @@ defineMessages('appearance', {
     downAria: 'Move {name} down',
   },
   ko: {
+    previewOff: '미사용',
+    previewEach: '각 줄은 상태 하나만 따로 보여줍니다(우선순위 순서). 게임에서는 줄에 해당하는 상태 중 우선순위가 가장 높은 것이 적용됩니다.',
     'mode.flag': '깃발',
     'mode.background': '배경',
     'what.flag': '아이콘 우하단의 작은 색 깃발',
@@ -45,7 +48,6 @@ defineMessages('appearance', {
     intro: '오버뷰 각 줄의 상태 깃발(아이콘 우하단에 작게 표시되는 색 표시)과 줄 배경색의 우선순위·색·깜빡임을 정합니다.',
     listAria: '{mode} 우선순위 목록',
     previewAria: '{mode} 미리보기',
-    previewTitle: '{what} - 활성 상태 중 우선순위 상위 {n}개',
     sampleNone: '상태 없는 일반 줄',
     counter: '활성 {a} / 전체 {n}',
     priorityHint: '우선순위는 위에서 아래로: 맨 위(번호가 작은) 활성 상태 하나의 색이 먼저 적용됩니다. 끌어서 또는 ▲▼ 로 순서를 바꾸세요.',
@@ -69,6 +71,8 @@ defineMessages('appearance', {
     downAria: '{name} 아래로',
   },
   ja: {
+    previewOff: '未使用',
+    previewEach: '各行は 1 つの状態を単独で表示しています（優先順位順）。ゲームでは、該当する状態のうち最も優先順位の高いものが適用されます。',
     'mode.flag': 'フラグ',
     'mode.background': '背景',
     'what.flag': 'アイコン右下の小さな色フラグ',
@@ -78,7 +82,6 @@ defineMessages('appearance', {
     intro: 'オーバービューの各行について、ステータスフラグ(アイコン右下に小さく表示される色マーク)と行の背景色の優先順位・色・点滅を設定します。',
     listAria: '{mode}の優先順位リスト',
     previewAria: '{mode}のプレビュー',
-    previewTitle: '{what} - 有効なステータスのうち優先順位が上位の{n}件',
     sampleNone: 'ステータスのない通常の行',
     counter: '有効 {a} / 全 {n}',
     priorityHint: '優先順位は上から下へ。一番上(番号が小さい)の有効なステータスの色が先に適用されます。ドラッグまたは ▲▼ で順序を変更してください。',
@@ -102,6 +105,8 @@ defineMessages('appearance', {
     downAria: '{name}を下へ',
   },
   ru: {
+    previewOff: 'не включено',
+    previewEach: 'Каждая строка показывает одно состояние отдельно, в порядке приоритета. В игре применяется состояние с наивысшим приоритетом из подходящих.',
     'mode.flag': 'Флаг',
     'mode.background': 'Фон',
     'what.flag': 'Маленький цветной флаг в правом нижнем углу иконки',
@@ -111,7 +116,6 @@ defineMessages('appearance', {
     intro: 'Задайте приоритет, цвет и мигание флага статуса (маленький цветной значок в правом нижнем углу иконки) и фона строки для каждой строки обзора.',
     listAria: 'Список приоритетов: {mode}',
     previewAria: 'Предпросмотр: {mode}',
-    previewTitle: '{what} - первые {n} активных статусов по приоритету',
     sampleNone: 'Обычная строка без статуса',
     counter: 'Активно {a} / Всего {n}',
     priorityHint: 'Приоритет идёт сверху вниз: сначала применяется цвет первого (с наименьшим номером) активного статуса. Меняйте порядок перетаскиванием или кнопками ▲▼.',
@@ -135,6 +139,8 @@ defineMessages('appearance', {
     downAria: 'Переместить вниз: {name}',
   },
   zh: {
+    previewOff: '未启用',
+    previewEach: '每一行单独展示一种状态（按优先级排序）。在游戏中，一行会使用其匹配的状态中优先级最高的那个。',
     'mode.flag': '标记',
     'mode.background': '背景',
     'what.flag': '图标右下角的小色块标记',
@@ -144,7 +150,6 @@ defineMessages('appearance', {
     intro: '设置总览每一行的状态标记(图标右下角的小色块)和行背景色的优先级、颜色与闪烁。',
     listAria: '{mode}优先级列表',
     previewAria: '{mode}预览',
-    previewTitle: '{what} - 启用状态中优先级最高的 {n} 个',
     sampleNone: '无状态的普通行',
     counter: '启用 {a} / 共 {n}',
     priorityHint: '优先级从上到下:最靠上(编号最小)的启用状态的颜色优先生效。可拖动或用 ▲▼ 调整顺序。',

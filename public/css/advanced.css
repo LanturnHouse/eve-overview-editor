@@ -3,3 +3,5 @@
 .ad-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .ad-row:last-child { border-bottom: 0; }
 #app section.card { max-width: 920px; }
+
+.ad-actions { display: flex; gap: 6px; justify-content: flex-end; white-space: nowrap; }

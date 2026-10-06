@@ -6,4 +6,5 @@ import './tabs.js';
 import './appearance.js';
 import './columns.js';
 import './labels.js';
+import './editor.js';
 import './advanced.js';

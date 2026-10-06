@@ -1,18 +1,16 @@
 // 오버뷰 탭 패널: 탭 이름(마크업), 사용하는 프리셋, 브래킷 필터, 탭 전용 컬럼.
-import { h, confirmDialog, toast, makeSortable, moveItem, gripHandle } from '../ui.js';
+import { h, confirmDialog, makeSortable, moveItem, gripHandle } from '../ui.js';
 import { store, clone } from '../store.js';
 import { BRACKET_SHOW_ALL } from '../model.js';
 import { ALL_COLUMNS, columnName } from '../data.js';
-import { renderMarkup, cssToArgb } from '../markup.js';
-import { symbolPicker } from './symbol-picker.js';
+import { renderMarkup, parseMarkup, plainText as atomsText } from '../markup.js';
+import { createMarkupEditor, createMarkupToolbar } from '../markup-editor.js';
 import { t as tr } from '../i18n.js';
 
 let selected = 0;
 try { selected = parseInt(localStorage.getItem('tabs.selected'), 10) || 0; } catch { /* 저장소 사용 불가 */ }
 
-let symbolsOpen = false; // 탭을 바꿔도 특수문자 선택창 열림 상태 유지
-const MARKUP_TAG = /<\/?(?:color|fontsize|b|i|u|br)(?:=[^>]*)?>/gi;
-const plainText = (s) => String(s ?? '').replace(MARKUP_TAG, '');
+const plainText = (s) => atomsText(parseMarkup(s));
 const nameHtml = (name) => renderMarkup(name) || `<span class="muted">${tr('tabs.unnamed')}</span>`;
 
 export default async function render(root) {
@@ -121,72 +119,21 @@ export default async function render(root) {
 
   function nameCard(t) {
     const idx = selected;
-    const input = h('input', {
-      type: 'text', class: 'input mono tb-name-input', value: t.name, spellcheck: 'false', autocomplete: 'off',
-      id: 'tb-name', placeholder: tr('tabs.namePlaceholder'),
-    });
-    const prev = h('div', { class: 'preview tb-name-preview', 'aria-live': 'polite', html: nameHtml(t.name) });
-    const changed = () => {
-      t.name = input.value;
-      store.commit(`tab-name-${idx}`);
-      prev.innerHTML = nameHtml(t.name);
-      drawBar();
-      const li = list.children[idx]?.querySelector('.tb-li-name');
-      if (li) li.innerHTML = nameHtml(t.name);
-    };
-    input.addEventListener('input', changed);
-
-    const insert = (text) => {
-      const s = input.selectionStart ?? input.value.length;
-      input.setRangeText(text, s, s, 'end');
-      input.focus();
-      changed();
-    };
-    const mk = (label, fn, title) => h('button', { class: 'btn small', type: 'button', title, onclick: fn }, label);
-    const color = h('input', { type: 'color', value: '#ef5350', 'aria-label': tr('tabs.colorAria') });
-    const size = h('input', { type: 'number', class: 'input tb-size', value: 16, min: 6, max: 60, 'aria-label': tr('tabs.sizeAria') });
-    const c1 = h('input', { type: 'color', value: '#aaaaaa', 'aria-label': tr('tabs.emphFirstAria') });
-    const c2 = h('input', { type: 'color', value: '#e0e0e0', 'aria-label': tr('tabs.emphRestAria') });
-    const sizeVal = () => Math.max(6, parseInt(size.value, 10) || 16);
-
-    const helpers = h('div', { class: 'tb-helpers' },
-      h('div', { class: 'tb-help-row' },
-        h('span', { class: 'muted small' }, tr('tabs.insertAt')), color,
-        mk(tr('tabs.colorTag'), () => insert(`<color=${cssToArgb(color.value)}>`), tr('tabs.colorTagTip')),
-        size, mk(tr('tabs.sizeTag'), () => insert(`<fontsize=${sizeVal()}>`), tr('tabs.sizeTagTip'))),
-      h('div', { class: 'tb-help-row' },
-        h('span', { class: 'muted small' }, tr('tabs.emphTitle')),
-        h('label', { class: 'check small' }, tr('tabs.emphFirst'), c1), h('label', { class: 'check small' }, tr('tabs.emphRest'), c2),
-        mk(tr('tabs.emphApply'), () => {
-          const chars = Array.from(plainText(input.value));
-          if (!chars.length) { toast(tr('tabs.emphEmpty'), 'warn', 2000); return; }
-          const [first, ...rest] = chars;
-          input.value = `<fontsize=${sizeVal()}><color=${cssToArgb(c1.value)}>${first}` + (rest.length ? `<color=${cssToArgb(c2.value)}>${rest.join('')}` : '');
-          changed();
-        }, tr('tabs.emphApplyTip')),
-        mk(tr('tabs.stripTags'), () => { input.value = plainText(input.value); changed(); }, tr('tabs.stripTagsTip'))));
-
-    // 특수문자 선택창: EVE 클라이언트 글꼴에 글리프가 있는 문자만
-    const picker = symbolPicker((ch) => insert(ch));
-    picker.classList.toggle('hidden', !symbolsOpen);
-    const symBtn = h('button', {
-      class: 'btn small', type: 'button', 'aria-expanded': String(symbolsOpen), 'aria-controls': 'tb-symbols',
-      title: tr('tabs.symBtnTip'),
-      onclick: () => {
-        symbolsOpen = !symbolsOpen;
-        picker.classList.toggle('hidden', !symbolsOpen);
-        symBtn.setAttribute('aria-expanded', String(symbolsOpen));
-        symBtn.textContent = symbolsOpen ? tr('tabs.symClose') : tr('tabs.symOpen');
+    // 입력한 대로 서식이 보이는 입력창 + 태그 입력창 (서로 실시간 동기화). 툴바는 마지막으로 포커스한 편집기에 적용된다.
+    const ed = createMarkupEditor({
+      mode: 'text', value: t.name, ariaLabel: tr('tabs.nameLabel'),
+      onChange: (raw) => {
+        t.name = raw;
+        store.commit(`tab-name-${idx}`);
+        drawBar();
+        const li = list.children[idx]?.querySelector('.tb-li-name');
+        if (li) li.innerHTML = nameHtml(t.name);
       },
-    }, symbolsOpen ? tr('tabs.symClose') : tr('tabs.symOpen'));
-    picker.id = 'tb-symbols';
-    helpers.append(h('div', { class: 'tb-help-row' }, h('span', { class: 'muted small' }, tr('tabs.symLabel')), symBtn,
-      h('span', { class: 'muted small' }, tr('tabs.symOnly'))));
+    });
+    ed.activate();
     return h('section', { class: 'card tb-card' },
       h('h3', {}, tr('tabs.nameTitle', { n: idx })),
-      h('div', { class: 'field' }, h('label', { for: 'tb-name' }, tr('tabs.nameLabel')), input),
-      helpers, picker,
-      h('div', { class: 'field' }, h('span', { class: 'label' }, tr('tabs.preview')), prev));
+      h('div', { class: 'field' }, h('span', { class: 'label' }, tr('tabs.nameLabel')), createMarkupToolbar({ multiline: false }), ed.el));
   }
 
   /** 프리셋 이름 <select>. 목록에 없는 현재 값은 경고와 함께 보존한다. */

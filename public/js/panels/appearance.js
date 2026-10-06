@@ -61,16 +61,24 @@ export default async function render(root) {
 
     const refreshPreview = () => {
       const all = rowIds(p);
-      const ids = all.filter((id) => isActive(p, id)).slice(0, 6);
-      const rows = ids.map((id, i) => previewRow(p, id, `${(i * 7 + 3) % 40}.${(i * 3 + 1) % 10} km`, SAMPLE_NAMES[i % SAMPLE_NAMES.length]));
+      // 좌측 목록의 모든 상태를 우선순위 순서 그대로 한 줄씩 보여준다 (비활성은 흐리게)
+      const rows = all.map((id, i) => previewRow(p, id, `${(i * 7 + 3) % 40}.${(i * 3 + 1) % 10} km`, SAMPLE_NAMES[i % SAMPLE_NAMES.length]));
       rows.push(previewRow(p, null, '84.1 km', t('appearance.sampleNone')));
-      preview.replaceChildren(
-        h('div', { class: 'ap-prev-title muted' }, t('appearance.previewTitle', { what: t(`appearance.what.${p}`), n: ids.length })),
-        ...rows);
+      preview.replaceChildren(...rows);
       counter.textContent = t('appearance.counter', { a: all.filter((id) => isActive(p, id)).length, n: all.length });
     };
+    // 좌측 행에 마우스/포커스가 오면 같은 상태의 미리보기 줄을 강조하고 보이는 곳으로 스크롤
+    const highlight = (id) => {
+      preview.querySelectorAll('.ap-prow.hl').forEach((e) => e.classList.remove('hl'));
+      if (id === null) return;
+      const el = preview.querySelector(`.ap-prow[data-id="${id}"]`);
+      if (!el) return;
+      el.classList.add('hl');
+      if (el.offsetTop < preview.scrollTop) preview.scrollTop = el.offsetTop;
+      else if (el.offsetTop + el.offsetHeight > preview.scrollTop + preview.clientHeight) preview.scrollTop = el.offsetTop + el.offsetHeight - preview.clientHeight;
+    };
 
-    const ctx = { refreshPreview, drawList: null };
+    const ctx = { refreshPreview, highlight, drawList: null };
     const drawList = (focus) => {
       const ids = rowIds(p);
       list.replaceChildren(...ids.map((id, i) => stateRow(p, id, i, ids.length, ctx)));
@@ -98,8 +106,10 @@ export default async function render(root) {
           list),
         h('div', { class: 'card ap-side' },
           h('h3', {}, t('appearance.previewHeading')),
-          h('p', { class: 'hint' }, t('appearance.previewNote')),
-          preview)));
+          h('p', { class: 'ap-side-what' }, t(`appearance.what.${p}`)),
+          h('p', { class: 'hint' }, t('appearance.previewEach')),
+          preview,
+          h('p', { class: 'hint ap-side-note' }, t('appearance.previewNote')))));
     drawList();
   }
   drawBody();
@@ -107,16 +117,18 @@ export default async function render(root) {
 
 function previewRow(p, id, dist, pilot) {
   const blink = id !== null && isBlink(p, id);
-  const css = id !== null && isActive(p, id) ? cssOf(colorName(p, id)) : null;
+  const on = id !== null && isActive(p, id);
+  const css = on ? cssOf(colorName(p, id)) : null;
   const isBg = p === 'background';
-  return h('div', { class: `ap-prow${blink ? ' blink' : ''}` },
+  const label = id === null ? '' : !on ? `${stateName(id)} · ${t('appearance.previewOff')}` : blink ? t('appearance.stateBlink', { name: stateName(id) }) : stateName(id);
+  return h('div', { class: `ap-prow${blink ? ' blink' : ''}${id !== null && !on ? ' off' : ''}`, dataset: { id: id === null ? '' : String(id) } },
     isBg && css ? h('span', { class: 'ap-prow-bg', style: { background: css } }) : null,
     // 게임에서 깃발은 아이콘의 우하단에 작게 겹쳐 표시된다
     h('span', { class: 'ap-prow-icon' }, '▲',
       !isBg && css ? h('span', { class: 'ap-flagbox', style: { background: css } }) : null),
     h('span', { class: 'ap-prow-dist' }, dist),
     h('span', { class: 'ap-prow-name' }, pilot),
-    h('span', { class: 'ap-prow-state' }, id === null ? '' : blink ? t('appearance.stateBlink', { name: stateName(id) }) : stateName(id)));
+    h('span', { class: 'ap-prow-state', title: label }, label));
 }
 
 function stateRow(p, id, i, total, ctx) {
@@ -177,13 +189,17 @@ function stateRow(p, id, i, total, ctx) {
     swatch,
     h('div', { class: 'ap-name' },
       h('div', { class: 'ap-ko' }, stateName(id), known ? null : h('span', { class: 'badge warn' }, t('appearance.unknown'))),
-      h('div', { class: 'ap-en muted small' }, known ? stateNameEn(id) : `ID ${id}`)),
-    h('span', { class: 'badge ap-kind' }, known ? kindName(st.kind) : '?'),
+      h('div', { class: 'ap-en muted small' }, h('span', { class: 'badge ap-kind' }, known ? kindName(st.kind) : '?'), known ? stateNameEn(id) : `ID ${id}`)),
     sel,
     h('label', { class: 'check ap-blink' }, blink, h('span', {}, t('appearance.blink'))),
     h('span', { class: 'ap-moves' },
       h('button', { type: 'button', class: 'btn small', dataset: { act: 'up' }, disabled: i === 0, title: t('appearance.up'), 'aria-label': t('appearance.upAria', { name: stateName(id) }), onclick: () => move(-1) }, '▲'),
       h('button', { type: 'button', class: 'btn small', dataset: { act: 'down' }, disabled: i === total - 1, title: t('appearance.down'), 'aria-label': t('appearance.downAria', { name: stateName(id) }), onclick: () => move(1) }, '▼')));
+
+  row.addEventListener('mouseenter', () => ctx.highlight(id));
+  row.addEventListener('mouseleave', () => ctx.highlight(null));
+  row.addEventListener('focusin', () => ctx.highlight(id));
+  row.addEventListener('focusout', () => ctx.highlight(null));
 
   function sync() {
     const name = colorName(p, id);

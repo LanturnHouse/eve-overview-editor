@@ -3,7 +3,9 @@ import { h, toast, makeSortable, moveItem, gripHandle } from '../ui.js';
 import { store } from '../store.js';
 import { LABEL_TYPE_IDS, labelTypeName } from '../data.js';
 import { t } from '../i18n.js';
-import { renderMarkup, cssToArgb } from '../markup.js';
+import { renderMarkup, recolorPiece, pieceColor } from '../markup.js';
+import * as CS from '../color-scheme.js';
+import { createMarkupEditor, createMarkupToolbar } from '../markup-editor.js';
 
 const SAMPLE = {
   'pilot name': 'Capsuleer Joe', 'ship type': 'Loki', 'ship name': 'My Ship', corporation: 'Some Corp',
@@ -28,14 +30,12 @@ const BACKGROUNDS = [
 ];
 let bgId = 'brown';
 try { bgId = localStorage.getItem('labels.bg') || 'brown'; } catch { /* 무시 */ }
-// 5개 리전 배경 분석으로 고른 가독성 좋은 글자색 (빨강·진한 주황은 어두운 배경에서 잘 안 읽힘)
-const RECOMMENDED = { 'ship type': 'FFEB3B', 'pilot name': 'FFCC80', corporation: 'E0E0E0', alliance: 'FFFFFF' };
-const COLOR_TAG = /<color=0x[0-9a-f]{2}([0-9a-f]{6})>/i;
 const EXTRA_BOOL = ['bold', 'italic', 'underline'];
 const bgName = (b) => t(`labels.bg.${b.id}`);
 
 export default async function render(root) {
   root.replaceChildren();
+  try { await CS.loadBgLuminance(); } catch { /* 읽기 점수 없이도 동작 */ }
   const m = store.model;
   const keyId = (k) => (k === null ? '(null)' : String(k));
 
@@ -73,13 +73,16 @@ export default async function render(root) {
     if (a.underline === true) { open += '<u>'; }
     return open + val + close; // 열린 태그는 renderMarkup 이 끝에서 닫아 준다
   }
-  function labelFor(data) {
+  /** 샘플 함선 data 로 라벨 문자열을 만든다. colors({조각: RRGGBB}) 를 주면 그 색으로 바꾼 미리보기를 만든다 */
+  function labelFor(data, colors = null) {
     let s = '';
     for (const key of m.shipLabelOrder) {
       const a = attrsOf(key);
       if (!a.state) continue;
+      let pre = str(a.pre), post = str(a.post);
+      if (colors && key !== null && colors[key]) ({ pre, post } = recolorPiece(pre, post, colors[key]));
       const val = key === null ? '' : (data[key] ?? str(key));
-      s += str(a.pre) + (key === null ? '' : decorate(a, val)) + str(a.post);
+      s += pre + (key === null ? '' : decorate(a, val)) + post;
     }
     return s;
   }
@@ -93,50 +96,26 @@ export default async function render(root) {
     preview.replaceChildren(...(any ? parts : [h('span', { class: 'muted', style: { padding: '14px' } }, t('labels.previewEmpty'))]));
   }
 
-  // ---------- 마크업 도우미 (포커스됐던 pre/post 입력의 커서 위치에 삽입) ----------
-  let last = null; // { el, start, end }
-  const remember = (el) => { last = { el, start: el.selectionStart ?? el.value.length, end: el.selectionEnd ?? el.value.length }; };
-  function insert(text) {
-    if (!last || !last.el.isConnected) { toast(t('labels.needFocus'), 'warn', 2500); return; }
-    const { el, start } = last;
-    el.setRangeText(text, start, start, 'end');
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    el.focus();
-    const pos = start + text.length;
-    el.setSelectionRange(pos, pos);
-    remember(el);
-  }
-  const colorPick = h('input', { type: 'color', value: '#ff8800', 'aria-label': t('labels.colorPickAria'), title: t('labels.colorPickAria') });
-  const sizePick = h('input', { type: 'number', class: 'input lb-size', value: 14, min: 6, max: 60, 'aria-label': t('labels.fontsize'), title: t('labels.fontsize') });
-  const tool = (label, text, title) => h('button', {
-    class: 'btn small mono', type: 'button', title: title || t('labels.insertTitle', { text }),
-    onmousedown: (e) => e.preventDefault(), onclick: () => insert(typeof text === 'function' ? text() : text),
-  }, label);
-  const toolbar = h('div', { class: 'lb-tools', role: 'group', 'aria-label': t('labels.toolsAria') },
-    h('span', { class: 'muted small' }, t('labels.insertLabel')),
-    colorPick, tool(t('labels.colorBtn'), () => `<color=${cssToArgb(colorPick.value)}>`, t('labels.colorBtnTitle')),
-    tool('</color>', '</color>'),
-    sizePick, tool(t('labels.sizeBtn'), () => `<fontsize=${Math.max(6, parseInt(sizePick.value, 10) || 14)}>`, t('labels.sizeBtnTitle')),
-    tool('<b>', '<b>'), tool('</b>', '</b>'), tool('<br>', '<br>', t('labels.brTitle')));
+  // ---------- 서식 툴바 (마지막으로 포커스한 조각 편집기에 적용) ----------
+  const toolbar = createMarkupToolbar({ multiline: true });
 
   // ---------- 순서 목록 ----------
   const list = h('div', { class: 'lb-list', role: 'list', 'aria-label': t('labels.listAria') });
   const openExtras = new Set();
   let focusAfter = null; // { index, cls }
 
-  function markupInput(key, field, label) {
+  /** 조각 하나의 서식 편집기: 입력한 대로 보이는 입력창 + 앞/뒤 태그 입력창 */
+  function pieceEditor(key) {
     const a = attrsOf(key);
-    const el = h('input', {
-      type: 'text', class: 'input mono lb-markup', value: str(a[field]), spellcheck: 'false', autocomplete: 'off',
-      'aria-label': t('labels.fieldAria', { name: labelTypeName(key), field: label }), placeholder: label,
+    return createMarkupEditor({
+      mode: 'piece', value: { pre: str(a.pre), post: str(a.post) }, chip: key !== null, multiline: true,
+      chipText: key === null ? '' : (SAMPLE[key] ?? labelTypeName(key)), ariaLabel: labelTypeName(key),
+      onChange: ({ pre, post }) => {
+        const at = ensure(key); at.pre = pre; at.post = post;
+        store.commit(`label-markup-${keyId(key)}`);
+        updatePreview();
+      },
     });
-    el.addEventListener('input', () => {
-      ensure(key)[field] = el.value;
-      store.commit(`label-${field}-${keyId(key)}`);
-      updatePreview();
-    });
-    for (const ev of ['focus', 'blur', 'keyup', 'click', 'select']) el.addEventListener(ev, () => remember(el));
-    return el;
   }
 
   function extrasEditor(key) {
@@ -194,18 +173,18 @@ export default async function render(root) {
       store.commit(`label-state-${keyId(key)}-${i}`);
       updatePreview();
     });
+    const extras = extrasEditor(key);
     r.append(
       h('div', { class: 'lb-main' },
         grip,
         h('label', { class: 'lb-vis', title: t('labels.visTitle') }, chk),
         h('span', { class: 'lb-name' }, name, key !== null && !LABEL_TYPE_IDS.includes(key) ? h('span', { class: 'badge' }, t('labels.unknown')) : null),
-        markupInput(key, 'pre', t('labels.pre')),
-        markupInput(key, 'post', t('labels.post')),
+        pieceEditor(key).el,
         h('span', { class: 'lb-acts' },
           h('button', { class: 'btn small lb-up', type: 'button', title: t('labels.up'), 'aria-label': t('labels.upAria', { name }), disabled: i === 0, onclick: () => move(i, i - 1, 'lb-up') }, '▲'),
           h('button', { class: 'btn small lb-down', type: 'button', title: t('labels.down'), 'aria-label': t('labels.downAria', { name }), disabled: i === n - 1, onclick: () => move(i, i + 1, 'lb-down') }, '▼'),
           h('button', { class: 'btn small danger lb-del', type: 'button', title: t('labels.removeTitle'), 'aria-label': t('labels.removeAria', { name }), onclick: () => remove(i) }, '✕'))),
-      extrasEditor(key));
+      ...(extras ? [extras] : []));
     return r;
   }
 
@@ -260,36 +239,115 @@ export default async function render(root) {
     }
   }
 
-  // ---------- 가독성 추천 색 ----------
-  function recommendCard() {
-    const rows = Object.entries(RECOMMENDED).map(([key, rec]) => {
-      const cur = COLOR_TAG.exec(str(attrsOf(key).pre))?.[1]?.toUpperCase() ?? null;
-      const sw = (hex) => h('span', { class: 'swatch', style: { background: hex ? `#${hex}` : 'transparent' } });
-      return h('tr', {}, h('td', {}, labelTypeName(key)),
-        h('td', {}, sw(cur), ' ', h('span', { class: 'mono small' }, cur ?? t('labels.recNoColor'))),
-        h('td', {}, '→'),
-        h('td', {}, sw(rec), ' ', h('span', { class: 'mono small' }, rec), cur === rec ? h('span', { class: 'muted small' }, ' ' + t('labels.recApplied')) : null));
+  // ---------- 추천 색 조합: 메인 색 -> 서브 색 자동 추천 ----------
+  const PIECE_ORDER = ['ship type', 'pilot name', 'corporation', 'alliance'];
+  const STYLE_IDS = CS.SCHEMES;
+  const scheme = { piece: 'ship type', hex: 'FFEB3B', style: 'tint', open: false };
+  try { Object.assign(scheme, JSON.parse(localStorage.getItem('labels.scheme') || '{}')); } catch { /* 무시 */ }
+  const saveScheme = () => { try { localStorage.setItem('labels.scheme', JSON.stringify({ piece: scheme.piece, hex: scheme.hex, style: scheme.style, open: scheme.open })); } catch { /* 무시 */ } };
+  const sw = (hex) => h('span', { class: 'swatch', style: { background: hex ? `#${hex}` : 'transparent' } });
+  const pct = (x) => Math.round(x * 100);
+
+  function schemeCard() {
+    const present = PIECE_ORDER.filter((k) => m.shipLabelOrder.includes(k));
+    const box = h('details', { class: 'card lb-scheme', open: scheme.open }, h('summary', {}, t('labels.scheme.title')));
+    box.addEventListener('toggle', () => { scheme.open = box.open; saveScheme(); });
+    if (present.length < 2) { box.append(h('p', { class: 'muted' }, t('labels.scheme.needPieces'))); return box; }
+    if (!present.includes(scheme.piece)) scheme.piece = present[0];
+    if (!CS.normHex(scheme.hex)) scheme.hex = 'FFEB3B';
+
+    const out = h('div', { class: 'lb-scheme-out' });
+    const pieceSel = h('select', { class: 'input', 'aria-label': t('labels.scheme.mainPiece') }, present.map((k) => h('option', { value: k, selected: k === scheme.piece }, labelTypeName(k))));
+    const colorIn = h('input', { type: 'color', value: `#${scheme.hex}`, 'aria-label': t('labels.scheme.mainColor') });
+    const hexIn = h('input', { type: 'text', class: 'input mono lb-hex', value: `#${scheme.hex}`, maxlength: 10, spellcheck: 'false', 'aria-label': t('labels.scheme.hexAria') });
+    const styleBox = h('div', { class: 'lb-scheme-styles', role: 'radiogroup', 'aria-label': t('labels.scheme.styleLabel') });
+
+    const compute = () => {
+      const hex = CS.normHex(scheme.hex) ?? 'FFFFFF';
+      const subs = CS.recommend(hex, scheme.style);
+      const map = { [scheme.piece]: hex };
+      present.filter((k) => k !== scheme.piece).forEach((k, i) => { if (subs[i]) map[k] = subs[i]; });
+      return map;
+    };
+    const readCell = (hex) => {
+      const c = CS.coverage(hex);
+      if (!c) return h('span', { class: 'muted' }, '–');
+      const lvl = c.worst >= 0.7 ? 'good' : c.worst >= 0.5 ? 'mid' : 'low';
+      return h('span', { class: `lb-read ${lvl}`, title: t('labels.scheme.readTitle') },
+        h('span', { class: 'lb-bar' }, h('span', { style: { width: `${pct(c.avg)}%` } })),
+        h('span', { class: 'small' }, t('labels.scheme.readValue', { avg: pct(c.avg), worst: pct(c.worst) })));
+    };
+    function drawStyles() {
+      styleBox.replaceChildren(...STYLE_IDS.map((id) => h('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(scheme.style === id), class: 'lb-scheme-style' + (scheme.style === id ? ' active' : ''),
+        onclick: () => { scheme.style = id; saveScheme(); drawStyles(); drawOut(); },
+      }, h('b', {}, t(`labels.scheme.style.${id}`)), h('span', { class: 'muted small' }, t(`labels.scheme.style.${id}.desc`)))));
+    }
+    function drawOut() {
+      const map = compute();
+      const mainHex = map[scheme.piece];
+      const rows = present.map((k) => {
+        const a = attrsOf(k), cur = pieceColor(str(a.pre), str(a.post)), nw = map[k];
+        return h('tr', {},
+          h('td', {}, labelTypeName(k), k === scheme.piece ? h('span', { class: 'badge', style: { marginLeft: '6px' } }, t('labels.scheme.main')) : null),
+          h('td', {}, sw(cur), ' ', h('span', { class: 'mono small' }, cur ? `#${cur}` : t('labels.scheme.noColor'))),
+          h('td', {}, '→'),
+          h('td', {}, sw(nw), ' ', h('code', { class: 'mono small lb-tag', title: t('labels.scheme.tagTitle') }, `<color=0xff${nw}>`)),
+          h('td', {}, readCell(nw)));
+      });
+      const mc = CS.coverage(mainHex);
+      const fix = mc && mc.worst < 0.7 ? CS.ensureReadable(mainHex) : null;
+      const cells = ['brown', 'blue', 'gold', 'red', 'green'].map((id) => {
+        const bg = BACKGROUNDS.find((b) => b.id === id);
+        return h('div', { class: 'lb-sc-cell', style: { backgroundImage: `url(${bg.file})` } },
+          h('div', { class: 'lb-sc-ship' }, h('span', { class: 'lb-bracket', 'aria-hidden': 'true' }), h('span', { class: 'lb-ship-text', html: renderMarkup(labelFor(SHIPS[1].d, map)) })),
+          h('span', { class: 'lb-sc-name' }, bgName(bg)));
+      });
+      out.replaceChildren(
+        ...(mc && fix ? [h('p', { class: 'warn lb-scheme-warn' }, t('labels.scheme.lowWarn', { worst: pct(mc.worst) }), ' ',
+          fix !== mainHex ? h('button', { type: 'button', class: 'btn small', onclick: () => { scheme.hex = fix; saveScheme(); colorIn.value = `#${fix}`; hexIn.value = `#${fix}`; drawOut(); } }, t('labels.scheme.lighten', { hex: fix })) : null)] : []),
+        h('table', { class: 'grid lb-scheme-table' },
+          h('thead', {}, h('tr', {}, h('th', {}, t('labels.scheme.colPiece')), h('th', {}, t('labels.scheme.colCurrent')), h('th', {}), h('th', {}, t('labels.scheme.colNew')), h('th', {}, t('labels.scheme.colRead')))),
+          h('tbody', {}, rows)),
+        h('h4', { class: 'lb-scheme-prevhead' }, t('labels.scheme.previewHeading')),
+        h('div', { class: 'lb-sc-grid' }, cells),
+        h('div', { class: 'toolbar', style: { marginTop: '10px' } },
+          h('button', { class: 'btn primary', type: 'button', onclick: () => applyScheme() }, t('labels.scheme.apply'))));
+    }
+    function applyScheme() {
+      let n = 0;
+      for (const [key, hex] of Object.entries(compute())) {
+        const a = ensure(key), r = recolorPiece(str(a.pre), str(a.post), hex);
+        if (r.pre !== str(a.pre) || r.post !== str(a.post)) { a.pre = r.pre; a.post = r.post; n++; }
+      }
+      if (!n) { toast(t('labels.scheme.nothing'), 'info', 2500); return; }
+      store.commit('label-scheme');
+      toast(t('labels.scheme.applied', { n }), 'ok', 4500);
+      redraw(); updatePreview(); drawOut();
+    }
+
+    pieceSel.addEventListener('change', () => {
+      scheme.piece = pieceSel.value;
+      const cur = pieceColor(str(attrsOf(scheme.piece).pre), str(attrsOf(scheme.piece).post));
+      if (cur) { scheme.hex = cur; colorIn.value = `#${cur}`; hexIn.value = `#${cur}`; }
+      saveScheme(); drawOut();
     });
-    return h('details', { class: 'card' },
-      h('summary', {}, t('labels.recTitle')),
-      h('p', { class: 'hint' }, t('labels.recHint')),
-      h('table', { class: 'grid' }, h('thead', {}, h('tr', {}, h('th', {}, t('labels.recPiece')), h('th', {}, t('labels.recCurrent')), h('th', {}), h('th', {}, t('labels.recRecommended')))), h('tbody', {}, rows)),
-      h('div', { class: 'toolbar', style: { marginTop: '10px' } },
-        h('button', { class: 'btn primary', onclick: () => {
-          let n = 0;
-          for (const [key, rec] of Object.entries(RECOMMENDED)) {
-            if (!m.shipLabelOrder.includes(key) && !find(key)) continue;
-            const a = ensure(key), pre = str(a.pre), tag = `<color=0xff${rec}>`;
-            const next = COLOR_TAG.test(pre) ? pre.replace(COLOR_TAG, tag) : pre.replace(/^((?:<fontsize=\d+>)*)/, `$1${tag}`);
-            if (next !== pre) { a.pre = next; n++; }
-          }
-          if (!n) { toast(t('labels.recAllDone'), 'info', 2500); return; }
-          store.commit('label-recommended');
-          toast(t('labels.recToast', { n }), 'ok', 4500);
-          redraw(); recommend.replaceWith(recommend = recommendCard());
-        } }, t('labels.recApply'))));
+    colorIn.addEventListener('input', () => { scheme.hex = CS.normHex(colorIn.value); hexIn.value = `#${scheme.hex}`; hexIn.removeAttribute('aria-invalid'); saveScheme(); drawOut(); });
+    hexIn.addEventListener('input', () => {
+      const v = CS.normHex(hexIn.value);
+      if (!v) { hexIn.setAttribute('aria-invalid', 'true'); return; }
+      hexIn.removeAttribute('aria-invalid'); scheme.hex = v; colorIn.value = `#${v}`; saveScheme(); drawOut();
+    });
+    box.append(
+      h('p', { class: 'hint' }, t('labels.scheme.hint')),
+      h('div', { class: 'lb-scheme-controls' },
+        h('label', { class: 'lb-scheme-field' }, h('span', { class: 'muted small' }, t('labels.scheme.mainPiece')), pieceSel),
+        h('label', { class: 'lb-scheme-field' }, h('span', { class: 'muted small' }, t('labels.scheme.mainColor')), h('span', { class: 'lb-scheme-colorrow' }, colorIn, hexIn))),
+      h('div', { class: 'muted small' }, t('labels.scheme.styleLabel')), styleBox, out);
+    drawStyles(); drawOut();
+    return box;
   }
-  let recommend = recommendCard();
+  let recommend = schemeCard();
 
   root.append(
     h('div', { class: 'panel-head' }, h('h2', {}, t('labels.title')),
