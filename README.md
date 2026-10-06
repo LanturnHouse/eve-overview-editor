@@ -177,6 +177,8 @@ The tabs at the top of the in-game Overview window.
 - **Tags.** The small field below the name shows the real EVE markup the game stores, for example `<color=0xffef5350><b>P</b></color>`. It is for advanced users: if you edit it, the styled box above updates (and the other way around). Use the **`</> Tags`** button to show or hide it. Markup the editor doesn't understand is kept as it is.
 - **Special characters.** The picker only lists characters that the EVE client fonts (EVE Sans Neue + Arial Unicode) can actually display, so you won't get empty boxes in the game. Choose a category (or *Recent*) and click a character to insert it at the cursor.
 
+  Which characters show up also depends on the **language of the game client**, because the client uses a different font per language. A character you type or paste yourself can be visible in one language and an empty box in another: for example `⚠` shows in the Korean client but not in the English one. Every character in the picker is in a font that all language versions fall back to, so it is chosen to show everywhere.
+
 ![Special character picker](docs/img/en/tabs-symbols.png)
 
 - **Display rules.** *Preset used for the overview list* decides what the tab lists. *Space bracket filter* decides which brackets show in space (*Show all brackets*, or a preset).
@@ -274,7 +276,7 @@ Copy the `.yaml` file from the overview folder (or use **Download**) and import 
 | The file list shows *(no YAML files)* | There is no `.yaml` file in that folder yet. Export from the game, then press ⟳ (if no file is open yet, it opens the first one for you). |
 | *This is not an EVE overview YAML file* | Use a file made by the game's **Export overview settings**. |
 | The game doesn't show my changes | Press **Save** (no orange dot), then **import** the file in the game. The game never reads the folder by itself. |
-| A character looks like an empty box in the game | Characters typed from your keyboard may not exist in the EVE fonts. Use the editor's special character picker, which only lists verified ones. |
+| A character looks like an empty box in the game | Characters typed from your keyboard may not exist in the EVE fonts, and which ones exist depends on the client language (`⚠` shows in the Korean client but not in the English one). Use the editor's special character picker, which only lists characters that show in every language. |
 | Colors in the preview differ a little | The previews approximate the game. Always check the real result in the game. |
 | A saved file looks wrong | Restore the previous version from **Files & advanced → Automatic backups**. |
 

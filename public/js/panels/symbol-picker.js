@@ -42,5 +42,6 @@ export function symbolPicker(onPick) {
   }
   draw();
   return h('div', { class: 'tb-sym-picker' }, tabs, grid, hint,
-    h('p', { class: 'hint' }, t('tabs.symNote')));
+    h('p', { class: 'hint' }, t('tabs.symNote')),
+    h('p', { class: 'hint tb-sym-lang' }, t('tabs.symLangNote')));
 }
