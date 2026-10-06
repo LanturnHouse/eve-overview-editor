@@ -4,6 +4,8 @@ import { t, tOrNull, nameOf } from './i18n.js';
 
 // kind: legal(법적/보안) | affiliation(소속) | standing(우호도) | militia(밀리샤) | misc
 // filterOnly: 프리셋 필터(숨김/항상표시)에서만 쓰이고 깃발/배경에는 못 쓰는 상태. en 은 게임의 영어 원문.
+// hidden: 현상금(20)처럼 게임이 서버 설정(hide_player_bounties)에 따라 설정 창에서 숨기는 상태. 목록에는 올리지 않고,
+//         파일이나 프리셋이 이미 쓰고 있을 때만 보인다 (쓰는 것을 놓치지 않도록).
 export const STATES = {
   9:  { en: 'Pilot has a security status below -5', kind: 'legal', color: 'red' },
   10: { en: 'Pilot has a security status below 0', kind: 'legal', color: 'orange' },
@@ -16,7 +18,7 @@ export const STATES = {
   17: { en: 'Pilot has Neutral Standing', kind: 'standing', color: 'grey' },
   18: { en: 'Pilot has Bad Standing', kind: 'standing', color: 'orange' },
   19: { en: 'Pilot has Terrible Standing', kind: 'standing', color: 'red' },
-  20: { en: 'Reserved (20)', kind: 'misc', color: 'grey' },
+  20: { en: 'Pilot has bounty on them', kind: 'legal', color: 'grey', hidden: true },
   21: { en: 'Pilot (agent) is interactable', kind: 'misc', color: 'white' },
   36: { en: 'Wreck is already viewed', kind: 'misc', color: 'grey', filterOnly: true },
   37: { en: 'Wreck is empty', kind: 'misc', color: 'grey', filterOnly: true },
@@ -33,7 +35,9 @@ export const STATES = {
 };
 export const STATE_KIND_IDS = ['legal', 'affiliation', 'standing', 'militia', 'misc'];
 export const ALL_STATE_IDS = Object.keys(STATES).map(Number).sort((a, b) => a - b);
-export const APPEARANCE_STATE_IDS = ALL_STATE_IDS.filter((id) => !STATES[id].filterOnly);
+export const APPEARANCE_STATE_IDS = ALL_STATE_IDS.filter((id) => !STATES[id].filterOnly && !STATES[id].hidden);
+export const HIDDEN_STATE_IDS = ALL_STATE_IDS.filter((id) => STATES[id].hidden);
+export const isHiddenState = (id) => !!STATES[id]?.hidden;
 
 /** 현재 언어의 상태 이름 (모르는 ID 는 "알 수 없는 상태 #id") */
 export const stateName = (id) => (STATES[id] ? t(`data.state.${id}`) : t('data.unknownState', { id }));
