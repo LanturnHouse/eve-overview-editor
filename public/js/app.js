@@ -47,7 +47,7 @@ function buildShell() {
     h('header', { class: 'topbar' },
       h('span', { class: 'brand' }, t('core.appName')),
       h('div', { class: 'filebox' }, els.fileSelect, els.dirty),
-      h('button', { class: 'btn ghost', title: t('core.refreshList'), 'aria-label': t('core.refreshList'), onclick: refreshFiles }, '⟳'),
+      h('button', { class: 'btn ghost', title: t('core.refreshList'), 'aria-label': t('core.refreshList'), onclick: () => refreshAndOpen() }, '⟳'),
       h('span', { class: 'spacer' }),
       els.undo, els.redo, els.save,
       h('button', { class: 'btn', onclick: saveAs }, t('core.saveAs')),
@@ -72,7 +72,7 @@ async function showPanel(id) {
   try { localStorage.setItem('panel', id); } catch {}
   renderNav();
   els.main.replaceChildren();
-  if (!store.model) {
+  if (!store.model && id !== 'advanced') {   // 파일 · 고급은 파일이 없어도 열려야 한다 (오버뷰 폴더를 못 찾았을 때 폴더를 바꿀 수 있도록)
     els.main.append(h('p', { class: 'muted' }, t('core.noFile')));
     return;
   }
@@ -108,6 +108,17 @@ async function refreshFiles() {
   files = s.files; dir = s.dir;
   renderFileSelect();
   return s;
+}
+
+/** 열린 파일이 없을 때(첫 실행, 폴더를 바꾼 직후, 새로 내보낸 뒤 새로고침)만 목록의 첫 파일을 연다. 1.yaml 이 있으면 그것을 우선한다 */
+async function openFirstIfNone() {
+  if (store.model) return;
+  const first = files.find((f) => f.name === '1.yaml') || files[0];
+  if (first) await openFromServer(first.name);
+}
+async function refreshAndOpen() {
+  try { await refreshFiles(); await openFirstIfNone(); }
+  catch (e) { toast(t('core.serverFailed', { msg: errMessage(e) }), 'error', 6000); }
 }
 
 async function confirmDiscard() {
@@ -185,7 +196,7 @@ function wireGlobal() {
 }
 
 /** 다른 패널(고급)이 쓰는 진입점 */
-export const shell = { refreshFiles, openFromServer, getDir: () => dir, getFiles: () => files, save, saveAs };
+export const shell = { refreshFiles: refreshAndOpen, openFromServer, getDir: () => dir, getFiles: () => files, save, saveAs };
 
 async function init() {
   buildShell();
@@ -195,8 +206,8 @@ async function init() {
   try {
     const s = await refreshFiles();
     if (!s.exists) toast(t('core.folderMissing', { dir: s.dir }), 'warn', 8000);
-    const first = files.find((f) => f.name === '1.yaml') || files[0];
-    if (first) { await openFromServer(first.name); return; }
+    await openFirstIfNone();
+    if (store.model) return;
   } catch (e) { toast(t('core.serverFailed', { msg: errMessage(e) }), 'error', 6000); }
   showPanel(activeId);
 }

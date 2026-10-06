@@ -10,7 +10,9 @@ export default async function render(root) {
   const m = store.model;
   root.replaceChildren(
     h('div', { class: 'panel-head' }, h('h2', {}, t('advanced.title')), h('p', {}, t('advanced.subtitle'))),
-    folderCard(), changesCard(m), cleanupCard(m, root), settingsCard(m), backupsCard(), yamlCard(m),
+    folderCard(),
+    // 열린 파일이 없을 때는 폴더 변경과 백업 불러오기만 쓸 수 있다
+    ...(m ? [changesCard(m), cleanupCard(m, root), settingsCard(m), backupsCard(), yamlCard(m)] : [h('p', { class: 'muted' }, t('core.noFile')), backupsCard()]),
   );
 }
 

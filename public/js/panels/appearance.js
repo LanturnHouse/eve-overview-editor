@@ -189,7 +189,7 @@ function stateRow(p, id, i, total, ctx) {
     swatch,
     h('div', { class: 'ap-name' },
       h('div', { class: 'ap-ko' }, stateName(id), known ? null : h('span', { class: 'badge warn' }, t('appearance.unknown'))),
-      h('div', { class: 'ap-en muted small' }, h('span', { class: 'badge ap-kind' }, known ? kindName(st.kind) : '?'), known ? stateNameEn(id) : `ID ${id}`)),
+      h('div', { class: 'ap-en muted small' }, h('span', { class: 'badge ap-kind' }, known ? kindName(st.kind) : '?'), h('span', { class: 'ap-en-text' }, known ? stateNameEn(id) : `ID ${id}`))),
     sel,
     h('label', { class: 'check ap-blink' }, blink, h('span', {}, t('appearance.blink'))),
     h('span', { class: 'ap-moves' },
