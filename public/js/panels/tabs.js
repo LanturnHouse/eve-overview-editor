@@ -5,6 +5,7 @@ import { BRACKET_SHOW_ALL } from '../model.js';
 import { ALL_COLUMNS, columnName } from '../data.js';
 import { renderMarkup, cssToArgb } from '../markup.js';
 import { symbolPicker } from './symbol-picker.js';
+import { t as tr } from '../i18n.js';
 
 let selected = 0;
 try { selected = parseInt(localStorage.getItem('tabs.selected'), 10) || 0; } catch { /* 저장소 사용 불가 */ }
@@ -12,7 +13,7 @@ try { selected = parseInt(localStorage.getItem('tabs.selected'), 10) || 0; } cat
 let symbolsOpen = false; // 탭을 바꿔도 특수문자 선택창 열림 상태 유지
 const MARKUP_TAG = /<\/?(?:color|fontsize|b|i|u|br)(?:=[^>]*)?>/gi;
 const plainText = (s) => String(s ?? '').replace(MARKUP_TAG, '');
-const nameHtml = (name) => renderMarkup(name) || '<span class="muted">(이름 없음)</span>';
+const nameHtml = (name) => renderMarkup(name) || `<span class="muted">${tr('tabs.unnamed')}</span>`;
 
 export default async function render(root) {
   root.replaceChildren();
@@ -21,8 +22,8 @@ export default async function render(root) {
   if (selected < 0) selected = 0;
   let focusAfter = null;
 
-  const bar = h('div', { class: 'preview tb-bar', role: 'tablist', 'aria-label': '탭 바 미리보기' });
-  const list = h('div', { class: 'list tb-list', role: 'listbox', 'aria-label': '탭 목록' });
+  const bar = h('div', { class: 'preview tb-bar', role: 'tablist', 'aria-label': tr('tabs.barAria') });
+  const list = h('div', { class: 'list tb-list', role: 'listbox', 'aria-label': tr('tabs.listAria') });
   const editor = h('div', { class: 'tb-editor' });
   const btn = {};
 
@@ -37,10 +38,10 @@ export default async function render(root) {
   function drawBar() {
     bar.replaceChildren(...m.tabs.map((t, i) => h('button', {
       type: 'button', role: 'tab', 'aria-selected': i === selected ? 'true' : 'false',
-      class: 'tb-bar-item' + (i === selected ? ' active' : ''), title: `탭 ${i}`,
+      class: 'tb-bar-item' + (i === selected ? ' active' : ''), title: tr('tabs.barItemTitle', { n: i }),
       html: nameHtml(t.name), onclick: () => select(i),
     })));
-    if (!m.tabs.length) bar.append(h('span', { class: 'muted' }, '(탭 없음)'));
+    if (!m.tabs.length) bar.append(h('span', { class: 'muted' }, tr('tabs.noTabsBar')));
   }
 
   // ---------- 왼쪽 목록 ----------
@@ -62,7 +63,7 @@ export default async function render(root) {
       window.addEventListener('mouseup', () => { r.draggable = false; }, { once: true });
     });
     r.addEventListener('dragend', () => { r.draggable = false; });
-    r.append(grip, h('span', { class: 'badge tb-idx', title: '게임에서의 탭 번호' }, i),
+    r.append(grip, h('span', { class: 'badge tb-idx', title: tr('tabs.idxTitle') }, i),
       h('span', { class: 'grow tb-li-name', html: nameHtml(t.name) }));
     return r;
   }
@@ -89,32 +90,32 @@ export default async function render(root) {
   }
 
   btn.add = h('button', { class: 'btn', type: 'button', onclick: () => {
-    m.tabs.push({ bracket: BRACKET_SHOW_ALL, color: null, name: '새 탭', overview: store.presetNames()[0] ?? '', extra: {} });
+    m.tabs.push({ bracket: BRACKET_SHOW_ALL, color: null, name: tr('tabs.newName'), overview: store.presetNames()[0] ?? '', extra: {} });
     store.commit('tab-add');
     select(m.tabs.length - 1);
-  } }, '+ 추가');
+  } }, tr('tabs.add'));
   btn.dup = h('button', { class: 'btn', type: 'button', onclick: () => {
     const copy = clone(m.tabs[selected]);
-    copy.name += ' 복사';
+    copy.name = tr('tabs.copyName', { name: copy.name });
     m.tabs.splice(selected + 1, 0, copy);
     store.commit('tab-duplicate');
     select(selected + 1);
-  } }, '복제');
+  } }, tr('tabs.dup'));
   btn.del = h('button', { class: 'btn danger', type: 'button', onclick: async () => {
     const t = m.tabs[selected];
     if (m.tabs.length <= 1) return;
-    if (!(await confirmDialog(`탭 ${selected} "${plainText(t.name)}" 을(를) 삭제할까요?`, { ok: '삭제', danger: true }))) return;
+    if (!(await confirmDialog(tr('tabs.confirmDelete', { n: selected, name: plainText(t.name) }), { ok: tr('tabs.del'), danger: true }))) return;
     m.tabs.splice(selected, 1);
     store.commit('tab-delete');
     select(Math.min(selected, m.tabs.length - 1));
-  } }, '삭제');
-  btn.up = h('button', { class: 'btn', type: 'button', title: '위로', 'aria-label': '선택한 탭을 위로', onclick: () => reorder(selected, selected - 1, 'up') }, '▲');
-  btn.down = h('button', { class: 'btn', type: 'button', title: '아래로', 'aria-label': '선택한 탭을 아래로', onclick: () => reorder(selected, selected + 1, 'down') }, '▼');
+  } }, tr('tabs.del'));
+  btn.up = h('button', { class: 'btn', type: 'button', title: tr('tabs.up'), 'aria-label': tr('tabs.upAria'), onclick: () => reorder(selected, selected - 1, 'up') }, '▲');
+  btn.down = h('button', { class: 'btn', type: 'button', title: tr('tabs.down'), 'aria-label': tr('tabs.downAria'), onclick: () => reorder(selected, selected + 1, 'down') }, '▼');
 
   // ---------- 오른쪽 편집기 ----------
   function drawEditor() {
     const t = m.tabs[selected];
-    if (!t) { editor.replaceChildren(h('p', { class: 'muted' }, '탭이 없습니다. "+ 추가" 로 만드세요.')); return; }
+    if (!t) { editor.replaceChildren(h('p', { class: 'muted' }, tr('tabs.noTabs'))); return; }
     editor.replaceChildren(nameCard(t), presetCard(t), columnsCard(t), advancedCard(t));
   }
 
@@ -122,7 +123,7 @@ export default async function render(root) {
     const idx = selected;
     const input = h('input', {
       type: 'text', class: 'input mono tb-name-input', value: t.name, spellcheck: 'false', autocomplete: 'off',
-      id: 'tb-name', placeholder: '예: <fontsize=16><color=0xffAAAAAA>G<color=0xffE0E0E0>eneral',
+      id: 'tb-name', placeholder: tr('tabs.namePlaceholder'),
     });
     const prev = h('div', { class: 'preview tb-name-preview', 'aria-live': 'polite', html: nameHtml(t.name) });
     const changed = () => {
@@ -142,50 +143,50 @@ export default async function render(root) {
       changed();
     };
     const mk = (label, fn, title) => h('button', { class: 'btn small', type: 'button', title, onclick: fn }, label);
-    const color = h('input', { type: 'color', value: '#ef5350', 'aria-label': '삽입할 색상' });
-    const size = h('input', { type: 'number', class: 'input tb-size', value: 16, min: 6, max: 60, 'aria-label': '글자 크기' });
-    const c1 = h('input', { type: 'color', value: '#aaaaaa', 'aria-label': '첫 글자 색' });
-    const c2 = h('input', { type: 'color', value: '#e0e0e0', 'aria-label': '나머지 글자 색' });
+    const color = h('input', { type: 'color', value: '#ef5350', 'aria-label': tr('tabs.colorAria') });
+    const size = h('input', { type: 'number', class: 'input tb-size', value: 16, min: 6, max: 60, 'aria-label': tr('tabs.sizeAria') });
+    const c1 = h('input', { type: 'color', value: '#aaaaaa', 'aria-label': tr('tabs.emphFirstAria') });
+    const c2 = h('input', { type: 'color', value: '#e0e0e0', 'aria-label': tr('tabs.emphRestAria') });
     const sizeVal = () => Math.max(6, parseInt(size.value, 10) || 16);
 
     const helpers = h('div', { class: 'tb-helpers' },
       h('div', { class: 'tb-help-row' },
-        h('span', { class: 'muted small' }, '커서 위치에 삽입'), color,
-        mk('색 태그', () => insert(`<color=${cssToArgb(color.value)}>`), '입력창의 커서 위치에 색상 태그 삽입'),
-        size, mk('글자 크기 태그', () => insert(`<fontsize=${sizeVal()}>`), '입력창의 커서 위치에 글자 크기 태그 삽입')),
+        h('span', { class: 'muted small' }, tr('tabs.insertAt')), color,
+        mk(tr('tabs.colorTag'), () => insert(`<color=${cssToArgb(color.value)}>`), tr('tabs.colorTagTip')),
+        size, mk(tr('tabs.sizeTag'), () => insert(`<fontsize=${sizeVal()}>`), tr('tabs.sizeTagTip'))),
       h('div', { class: 'tb-help-row' },
-        h('span', { class: 'muted small' }, '첫 글자만 강조'),
-        h('label', { class: 'check small' }, '첫 글자', c1), h('label', { class: 'check small' }, '나머지', c2),
-        mk('적용', () => {
+        h('span', { class: 'muted small' }, tr('tabs.emphTitle')),
+        h('label', { class: 'check small' }, tr('tabs.emphFirst'), c1), h('label', { class: 'check small' }, tr('tabs.emphRest'), c2),
+        mk(tr('tabs.emphApply'), () => {
           const chars = Array.from(plainText(input.value));
-          if (!chars.length) { toast('이름이 비어 있습니다.', 'warn', 2000); return; }
+          if (!chars.length) { toast(tr('tabs.emphEmpty'), 'warn', 2000); return; }
           const [first, ...rest] = chars;
           input.value = `<fontsize=${sizeVal()}><color=${cssToArgb(c1.value)}>${first}` + (rest.length ? `<color=${cssToArgb(c2.value)}>${rest.join('')}` : '');
           changed();
-        }, '태그를 지우고 첫 글자에만 색을 입혀 다시 만듭니다'),
-        mk('태그 모두 제거', () => { input.value = plainText(input.value); changed(); }, '마크업 태그를 지우고 글자만 남깁니다')));
+        }, tr('tabs.emphApplyTip')),
+        mk(tr('tabs.stripTags'), () => { input.value = plainText(input.value); changed(); }, tr('tabs.stripTagsTip'))));
 
     // 특수문자 선택창: EVE 클라이언트 글꼴에 글리프가 있는 문자만
     const picker = symbolPicker((ch) => insert(ch));
     picker.classList.toggle('hidden', !symbolsOpen);
     const symBtn = h('button', {
       class: 'btn small', type: 'button', 'aria-expanded': String(symbolsOpen), 'aria-controls': 'tb-symbols',
-      title: 'EVE 에서 표시되는 특수문자만 모아 둔 선택창',
+      title: tr('tabs.symBtnTip'),
       onclick: () => {
         symbolsOpen = !symbolsOpen;
         picker.classList.toggle('hidden', !symbolsOpen);
         symBtn.setAttribute('aria-expanded', String(symbolsOpen));
-        symBtn.textContent = symbolsOpen ? '특수문자 닫기 ▴' : '특수문자 ▾';
+        symBtn.textContent = symbolsOpen ? tr('tabs.symClose') : tr('tabs.symOpen');
       },
-    }, symbolsOpen ? '특수문자 닫기 ▴' : '특수문자 ▾');
+    }, symbolsOpen ? tr('tabs.symClose') : tr('tabs.symOpen'));
     picker.id = 'tb-symbols';
-    helpers.append(h('div', { class: 'tb-help-row' }, h('span', { class: 'muted small' }, '특수문자'), symBtn,
-      h('span', { class: 'muted small' }, 'EVE 에서 실제로 표시되는 문자만')));
+    helpers.append(h('div', { class: 'tb-help-row' }, h('span', { class: 'muted small' }, tr('tabs.symLabel')), symBtn,
+      h('span', { class: 'muted small' }, tr('tabs.symOnly'))));
     return h('section', { class: 'card tb-card' },
-      h('h3', {}, `탭 ${idx} 이름`),
-      h('div', { class: 'field' }, h('label', { for: 'tb-name' }, '이름 (인게임 마크업 허용)'), input),
+      h('h3', {}, tr('tabs.nameTitle', { n: idx })),
+      h('div', { class: 'field' }, h('label', { for: 'tb-name' }, tr('tabs.nameLabel')), input),
       helpers, picker,
-      h('div', { class: 'field' }, h('span', { class: 'label' }, '미리보기'), prev));
+      h('div', { class: 'field' }, h('span', { class: 'label' }, tr('tabs.preview')), prev));
   }
 
   /** 프리셋 이름 <select>. 목록에 없는 현재 값은 경고와 함께 보존한다. */
@@ -198,11 +199,11 @@ export default async function render(root) {
       if (extraFirst) opts.push(h('option', { value: extraFirst.value }, extraFirst.label));
       for (const n of names) opts.push(h('option', { value: n }, n));
       const broken = current !== extraFirst?.value && !names.includes(current);
-      if (broken) opts.push(h('option', { value: current }, `⚠ ${current || '(비어 있음)'} — 없는 프리셋`));
+      if (broken) opts.push(h('option', { value: current }, tr('tabs.ruleMissingOpt', { name: current || tr('tabs.ruleEmpty') })));
       sel.replaceChildren(...opts);
       sel.value = current;
       warn.classList.toggle('hidden', !broken);
-      warn.textContent = broken ? `프리셋 "${current}" 이(가) 이 파일에 없습니다. 값은 그대로 보존됩니다. 다른 프리셋을 고르면 바뀝니다.` : '';
+      warn.textContent = broken ? tr('tabs.ruleMissingWarn', { name: current }) : '';
     };
     fill();
     return { sel, warn, fill, set: (v) => { current = v; } };
@@ -211,13 +212,13 @@ export default async function render(root) {
   function presetCard(t) {
     const ov = presetSelect('tb-overview', t.overview);
     ov.sel.addEventListener('change', () => { t.overview = ov.sel.value; ov.set(t.overview); store.commit(`tab-overview-${selected}`); ov.fill(); });
-    const br = presetSelect('tb-bracket', t.bracket, { value: BRACKET_SHOW_ALL, label: '모든 브래킷 표시' });
+    const br = presetSelect('tb-bracket', t.bracket, { value: BRACKET_SHOW_ALL, label: tr('tabs.ruleShowAll') });
     br.sel.addEventListener('change', () => { t.bracket = br.sel.value; br.set(t.bracket); store.commit(`tab-bracket-${selected}`); br.fill(); });
     return h('section', { class: 'card tb-card' },
-      h('h3', {}, '표시 규칙'),
+      h('h3', {}, tr('tabs.ruleTitle')),
       h('div', { class: 'tb-grid' },
-        h('div', { class: 'field' }, h('label', { for: 'tb-overview' }, '오버뷰(목록)에 쓸 프리셋'), ov.sel, ov.warn),
-        h('div', { class: 'field' }, h('label', { for: 'tb-bracket' }, '우주 공간 브래킷 필터'), br.sel, br.warn)));
+        h('div', { class: 'field' }, h('label', { for: 'tb-overview' }, tr('tabs.ruleOverview')), ov.sel, ov.warn),
+        h('div', { class: 'field' }, h('label', { for: 'tb-bracket' }, tr('tabs.ruleBracket')), br.sel, br.warn)));
   }
 
   function columnsCard(t) {
@@ -239,12 +240,12 @@ export default async function render(root) {
 
     function drawCols() {
       if (!hasOverride()) {
-        body.replaceChildren(h('p', { class: 'hint' }, '전역 설정(컬럼 패널)을 사용합니다.'));
+        body.replaceChildren(h('p', { class: 'hint' }, tr('tabs.colsGlobal')));
         return;
       }
       const all = items();
       const cols = effCols();
-      const colList = h('div', { class: 'tb-col-list', role: 'list', 'aria-label': '이 탭의 컬럼 순서' });
+      const colList = h('div', { class: 'tb-col-list', role: 'list', 'aria-label': tr('tabs.colsListAria') });
       all.forEach((c, i) => {
         const grip = gripHandle();
         const r = h('div', { class: 'tb-col', dataset: { sortable: '' }, role: 'listitem' });
@@ -254,20 +255,20 @@ export default async function render(root) {
         });
         r.addEventListener('dragend', () => { r.draggable = false; });
         const nm = columnName(c);
-        const chk = h('input', { type: 'checkbox', checked: cols.includes(c), 'aria-label': `${nm} 표시`, onchange: () => {
+        const chk = h('input', { type: 'checkbox', checked: cols.includes(c), 'aria-label': tr('tabs.colShow', { name: nm }), onchange: () => {
           const cur = t.tabColumns ?? [...m.overviewColumns];
           t.tabColumns = chk.checked ? (cur.includes(c) ? cur : [...cur, c]) : cur.filter((x) => x !== c);
           store.commit(`tab-cols-${selected}`);
         } });
         r.append(grip, h('label', { class: 'check tb-col-name' }, chk, nm, nm !== c ? h('span', { class: 'badge mono' }, c) : null),
           h('span', { class: 'tb-col-acts' },
-            h('button', { class: 'btn small', type: 'button', title: '위로', 'aria-label': `${nm} 위로`, disabled: i === 0, onclick: () => moveCol(i, i - 1) }, '▲'),
-            h('button', { class: 'btn small', type: 'button', title: '아래로', 'aria-label': `${nm} 아래로`, disabled: i === all.length - 1, onclick: () => moveCol(i, i + 1) }, '▼')));
+            h('button', { class: 'btn small', type: 'button', title: tr('tabs.up'), 'aria-label': tr('tabs.colUp', { name: nm }), disabled: i === 0, onclick: () => moveCol(i, i - 1) }, '▲'),
+            h('button', { class: 'btn small', type: 'button', title: tr('tabs.down'), 'aria-label': tr('tabs.colDown', { name: nm }), disabled: i === all.length - 1, onclick: () => moveCol(i, i + 1) }, '▼')));
         colList.append(r);
       });
       makeSortable(colList, (f, to) => moveCol(f, to));
       body.replaceChildren(
-        h('p', { class: 'hint' }, '체크한 컬럼만 이 탭에서 보이며, 위에서 아래 순서가 왼쪽에서 오른쪽 순서입니다.'),
+        h('p', { class: 'hint' }, tr('tabs.colsHint')),
         colList);
     }
     function moveCol(from, to) {
@@ -281,31 +282,31 @@ export default async function render(root) {
     }
     drawCols();
     return h('section', { class: 'card tb-card' },
-      h('h3', {}, '컬럼'),
-      h('label', { class: 'check', for: 'tb-colov' }, toggle, '이 탭만 따로 설정'),
+      h('h3', {}, tr('tabs.colsTitle')),
+      h('label', { class: 'check', for: 'tb-colov' }, toggle, tr('tabs.colsOverride')),
       body);
   }
 
   function advancedCard(t) {
     const extraKeys = Object.keys(t.extra || {});
     return h('details', { class: 'card tb-card tb-adv' },
-      h('summary', {}, '고급 정보 (읽기 전용, 저장 시 그대로 보존)'),
+      h('summary', {}, tr('tabs.advSummary')),
       h('dl', { class: 'tb-dl' },
         h('dt', {}, 'color'), h('dd', { class: 'mono' }, JSON.stringify(t.color ?? null)),
-        h('dt', {}, '탭 번호'), h('dd', { class: 'mono' }, `${selected} (저장 시 목록 위치로 자동 부여)`),
-        extraKeys.length ? [h('dt', {}, '기타 속성'), h('dd', { class: 'mono' }, JSON.stringify(t.extra))] : null));
+        h('dt', {}, tr('tabs.advTabNo')), h('dd', { class: 'mono' }, tr('tabs.advTabNoVal', { n: selected })),
+        extraKeys.length ? [h('dt', {}, tr('tabs.advExtra')), h('dd', { class: 'mono' }, JSON.stringify(t.extra))] : null));
   }
 
   root.append(
-    h('div', { class: 'panel-head' }, h('h2', {}, '오버뷰 탭'),
-      h('p', {}, '게임 오버뷰 창 위쪽의 탭을 설정합니다.')),
+    h('div', { class: 'panel-head' }, h('h2', {}, tr('tabs.title')),
+      h('p', {}, tr('tabs.subtitle'))),
     h('div', { class: 'card tb-barcard' },
-      h('div', { class: 'tb-barhead muted small' }, '탭 바 미리보기 — 클릭해서 선택'), bar),
+      h('div', { class: 'tb-barhead muted small' }, tr('tabs.barHead')), bar),
     h('div', { class: 'split' },
       h('div', { class: 'card' },
         h('div', { class: 'toolbar' }, btn.add, btn.dup, btn.del, h('span', { class: 'grow' }), btn.up, btn.down),
         list,
-        h('p', { class: 'hint' }, '번호는 목록 위치입니다. 순서를 바꾸면 저장할 때 번호가 자동으로 다시 매겨집니다.')),
+        h('p', { class: 'hint' }, tr('tabs.listHint'))),
       editor));
   drawBar(); drawList(); drawEditor();
 }

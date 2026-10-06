@@ -1,4 +1,5 @@
 // 패널들이 공통으로 쓰는 작은 UI 도우미.
+import { t } from './i18n.js';
 
 /** h('div', {class:'a', onclick:fn, dataset:{x:1}, style:{color:'red'}}, '텍스트', h('span')) */
 export function h(tag, props = {}, ...children) {
@@ -39,22 +40,22 @@ function modal(build) {
   });
 }
 /** 확인 대화상자 -> Promise<boolean> */
-export const confirmDialog = (message, { ok = '확인', danger = false } = {}) =>
+export const confirmDialog = (message, { ok, danger = false } = {}) =>
   modal((dlg, done) => dlg.append(
     h('p', { class: 'modal-msg' }, message),
     h('div', { class: 'modal-actions' },
-      h('button', { class: 'btn', onclick: () => done(false) }, '취소'),
-      h('button', { class: `btn ${danger ? 'danger' : 'primary'}`, onclick: () => done(true) }, ok)),
+      h('button', { class: 'btn', onclick: () => done(false) }, t('core.cancel')),
+      h('button', { class: `btn ${danger ? 'danger' : 'primary'}`, onclick: () => done(true) }, ok ?? t('core.ok'))),
   )).then((v) => v === true);
 /** 한 줄 입력 대화상자 -> Promise<string|null> */
-export const promptDialog = (title, value = '', { ok = '확인' } = {}) =>
+export const promptDialog = (title, value = '', { ok } = {}) =>
   modal((dlg, done) => {
     const input = h('input', { type: 'text', class: 'input', value, style: { width: '100%' } });
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') done(input.value); });
     dlg.append(h('p', { class: 'modal-msg' }, title), input,
       h('div', { class: 'modal-actions' },
-        h('button', { class: 'btn', onclick: () => done(null) }, '취소'),
-        h('button', { class: 'btn primary', onclick: () => done(input.value) }, ok)));
+        h('button', { class: 'btn', onclick: () => done(null) }, t('core.cancel')),
+        h('button', { class: 'btn primary', onclick: () => done(input.value) }, ok ?? t('core.ok'))));
     setTimeout(() => { input.focus(); input.select(); }, 0);
   });
 
@@ -102,7 +103,7 @@ export function makeSortable(listEl, onSort) {
   });
 }
 /** 드래그 가능한 행을 만들 때: h('div', {draggable:'true', dataset:{sortable:''}}, gripHandle(), ...) */
-export const gripHandle = () => h('span', { class: 'grip', title: '끌어서 순서 변경' }, '⋮⋮');
+export const gripHandle = () => h('span', { class: 'grip', title: t('core.dragToReorder') }, '⋮⋮');
 
 /** 배열 요소 이동 (제자리 수정) */
 export function moveItem(arr, from, to) {

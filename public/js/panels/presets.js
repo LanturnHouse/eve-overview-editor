@@ -1,8 +1,9 @@
 // 프리셋 패널: 오버뷰 프리셋(표시할 유형/그룹, 상태 필터)을 편집한다.
 import { store, clone } from '../store.js';
 import { h, toast, confirmDialog, promptDialog, makeSortable, gripHandle, moveItem, debounce } from '../ui.js';
+import { t, nameOf, getLang, getLocale } from '../i18n.js';
 import {
-  STATES, STATE_KINDS, ALL_STATE_IDS, stateName, stateNameEn, colorCss,
+  STATES, STATE_KIND_IDS, ALL_STATE_IDS, stateName, stateNameEn, kindName, colorCss, colorLabel,
   OVERVIEW_CATEGORIES, getGroupData,
 } from '../data.js';
 
@@ -14,25 +15,33 @@ let selName = lsGet('presets.sel');
 let subtab = lsGet('presets.sub') === 'states' ? 'states' : 'groups';
 
 const numAsc = (a, b) => a - b;
-const koCmp = (a, b) => a.localeCompare(b, 'ko');
+const nameCmp = (a, b) => a.localeCompare(b, getLocale());
+const LANG_CODES = ['en', 'ko', 'ja', 'ru', 'zh'];
+/** 모든 언어 이름을 합친 검색 문자열 (어느 언어로 검색해도 찾히게) */
+const searchText = (entry, ...extra) => [...LANG_CODES.map((c) => entry?.[c]), ...extra].filter(Boolean).join(' ').toLowerCase();
+/** 영어 이름이 보조 표기로 필요한가 (현재 언어가 영어가 아니고 이름이 다를 때) */
+const enAlt = (entry, main) => (getLang() !== 'en' && entry?.en && entry.en !== main ? entry.en : null);
 
 // ---- 그룹 색인 (그룹 데이터가 바뀌지 않으므로 한 번만 계산) ----
-let idxFor = null, idxCache = null;
+let idxFor = null, idxLang = null, idxCache = null;
 function groupIndex() {
   const gd = getGroupData();
-  if (idxFor === gd && idxCache) return idxCache;
+  const lang = getLang();
+  if (idxFor === gd && idxLang === lang && idxCache) return idxCache;
   const byCat = new Map();
   for (const [sid, g] of Object.entries(gd.groups)) {
     const id = Number(sid);
     if (!byCat.has(g.cat)) byCat.set(g.cat, []);
-    byCat.get(g.cat).push({ id, ko: g.ko || g.en || '', en: g.en || '', search: `${g.ko || ''} ${g.en || ''} ${id}`.toLowerCase() });
+    const name = nameOf(g) || String(id);
+    byCat.get(g.cat).push({ id, name, alt: enAlt(g, name), search: searchText(g, String(id)) });
   }
-  for (const list of byCat.values()) list.sort((a, b) => koCmp(a.ko, b.ko) || a.id - b.id);
-  const catName = (c) => gd.categories[c] ?? { ko: `#${c}`, en: `#${c}` };
+  for (const list of byCat.values()) list.sort((a, b) => nameCmp(a.name, b.name) || a.id - b.id);
+  const catEntry = (c) => gd.categories[c] ?? { en: `#${c}` };
+  const catName = (c) => { const e = catEntry(c); const name = nameOf(e) || `#${c}`; return { name, alt: enAlt(e, name), search: searchText(e) }; };
   const rest = [...byCat.keys()].filter((c) => !OVERVIEW_CATEGORIES.includes(c))
-    .sort((a, b) => koCmp(catName(a).ko, catName(b).ko));
+    .sort((a, b) => nameCmp(catName(a).name, catName(b).name));
   const order = [...OVERVIEW_CATEGORIES.filter((c) => byCat.has(c)), ...rest];
-  idxFor = gd;
+  idxFor = gd; idxLang = lang;
   idxCache = { gd, byCat, order, catName };
   return idxCache;
 }
@@ -48,10 +57,10 @@ export default async function render(root) {
     root.append(
       panelHead(),
       h('div', { class: 'card' },
-        h('p', {}, '프리셋이 하나도 없습니다.'),
-        h('p', { class: 'hint' }, '프리셋은 오버뷰 탭이 어떤 유형(그룹)을 보여줄지 정합니다. 새로 만들어 시작하세요.'),
+        h('p', {}, t('presets.emptyNone')),
+        h('p', { class: 'hint' }, t('presets.emptyHint')),
         h('div', { class: 'toolbar', style: { marginTop: '10px' } },
-          h('button', { class: 'btn primary', onclick: async () => { if (await addPreset()) render(root); } }, '새 프리셋'))),
+          h('button', { class: 'btn primary', onclick: async () => { if (await addPreset()) render(root); } }, t('presets.emptyNew')))),
     );
     return;
   }
@@ -63,19 +72,19 @@ export default async function render(root) {
   const remember = () => { selName = cur().name; lsSet('presets.sel', selName); };
 
   // ---------- 목록 ----------
-  const listEl = h('div', { class: 'list pr-list', role: 'listbox', 'aria-label': '프리셋 목록' });
+  const listEl = h('div', { class: 'list pr-list', role: 'listbox', 'aria-label': t('presets.listAria') });
   const editorHost = h('div', { class: 'pr-editor' });
   let rowEls = [];
 
-  const btnRename = h('button', { class: 'btn', onclick: () => renameCur() }, '이름 변경');
-  const btnDup = h('button', { class: 'btn', onclick: () => dupCur() }, '복제');
-  const btnDel = h('button', { class: 'btn danger', onclick: () => delCur() }, '삭제');
+  const btnRename = h('button', { class: 'btn', onclick: () => renameCur() }, t('presets.btnRename'));
+  const btnDup = h('button', { class: 'btn', onclick: () => dupCur() }, t('presets.btnDup'));
+  const btnDel = h('button', { class: 'btn danger', onclick: () => delCur() }, t('presets.btnDel'));
   const side = h('div', { class: 'card pr-side' },
     h('div', { class: 'toolbar' },
-      h('button', { class: 'btn primary', onclick: () => addNew() }, '+ 새 프리셋'),
+      h('button', { class: 'btn primary', onclick: () => addNew() }, t('presets.btnAdd')),
       btnDup, btnRename, btnDel),
     listEl,
-    h('p', { class: 'hint' }, '⋮⋮ 를 끌어 순서를 바꿉니다. 이름을 더블클릭하면 이름 변경.'),
+    h('p', { class: 'hint' }, t('presets.listHint')),
   );
 
   function drawList() {
@@ -97,7 +106,7 @@ export default async function render(root) {
       },
       gripHandle(),
       h('span', { class: 'grow', title: presetLabel(p) }, presetLabel(p)),
-      h('span', { class: 'badge pr-cnt', title: '선택된 그룹 수' }, uniqueCount(p.groups)));
+      h('span', { class: 'badge pr-cnt', title: t('presets.cntTitle') }, uniqueCount(p.groups)));
       return row;
     });
     listEl.replaceChildren(...rowEls);
@@ -129,36 +138,40 @@ export default async function render(root) {
   function dupCur() {
     const src = cur();
     const np = clone(src);
-    np.name = store.uniquePresetName(`${src.name} 복사`);
+    np.name = store.uniquePresetName(t('presets.dupName', { name: src.name }));
     model.presets.splice(selIdx + 1, 0, np);
     store.commit('dup-preset');
     selIdx++; remember(); drawList(); renderEditor();
-    toast(`'${np.name}' 을(를) 만들었습니다.`, 'ok', 1800);
+    toast(t('presets.dupDone', { name: np.name }), 'ok', 1800);
   }
   async function renameCur() {
     const p = cur();
-    const v = await promptDialog('프리셋 이름 변경', p.name, { ok: '변경' });
+    const v = await promptDialog(t('presets.renameTitle'), p.name, { ok: t('presets.renameOk') });
     if (v === null) return;
     const nn = v.trim();
     if (nn === p.name) return;
-    if (!nn) { toast('이름을 비워 둘 수 없습니다.', 'warn'); return; }
-    if (model.presets.some((q, i) => i !== selIdx && q.name === nn)) { toast(`'${nn}' 이름의 프리셋이 이미 있습니다.`, 'warn'); return; }
+    if (!nn) { toast(t('presets.errEmpty'), 'warn'); return; }
+    if (model.presets.some((q, i) => i !== selIdx && q.name === nn)) { toast(t('presets.errExists', { name: nn }), 'warn'); return; }
     const used = store.tabsUsingPreset(p.name).length;
-    if (!store.renamePreset(selIdx, nn)) { toast('이름을 바꾸지 못했습니다.', 'error'); return; }
+    if (!store.renamePreset(selIdx, nn)) { toast(t('presets.renameFail'), 'error'); return; }
     remember(); drawList();
     editorHost.querySelector('.pr-title')?.replaceChildren(nn);
-    toast(used ? `이름을 바꿨습니다. (${used}개 탭의 참조도 함께 변경)` : '이름을 바꿨습니다.', 'ok', 2200);
+    toast(used ? t('presets.renameDoneRefs', { n: used }) : t('presets.renameDone'), 'ok', 2200);
   }
   async function delCur() {
     const p = cur();
     const tabs = store.tabsUsingPreset(p.name);
-    let msg = `프리셋 '${p.name}' 을(를) 삭제할까요?`;
+    let msg = t('presets.delConfirm', { name: p.name });
     if (tabs.length) {
-      msg += `\n\n다음 탭이 이 프리셋을 사용 중입니다:\n` +
-        tabs.map(({ t, i }) => ` • 탭 ${i + 1} ${t.name ? `'${t.name.replace(/<[^>]*>/g, '')}'` : ''} (${[t.overview === p.name ? '표시 대상' : null, t.bracket === p.name ? '브래킷' : null].filter(Boolean).join(', ')})`).join('\n') +
-        `\n\n삭제하면 이 탭들은 존재하지 않는 프리셋을 가리키게 됩니다. (되돌리기 가능)`;
+      msg += `\n\n${t('presets.delUsedBy')}\n` +
+        tabs.map(({ t: tab, i }) => t('presets.delTabLine', {
+          n: i + 1,
+          label: tab.name ? `'${tab.name.replace(/<[^>]*>/g, '')}'` : '',
+          uses: [tab.overview === p.name ? t('presets.delUseShow') : null, tab.bracket === p.name ? t('presets.delUseBracket') : null].filter(Boolean).join(', '),
+        })).join('\n') +
+        `\n\n${t('presets.delTail')}`;
     }
-    if (!(await confirmDialog(msg, { ok: '삭제', danger: true }))) return;
+    if (!(await confirmDialog(msg, { ok: t('presets.delOk'), danger: true }))) return;
     model.presets.splice(selIdx, 1);
     store.commit('delete-preset');
     if (!model.presets.length) { render(root); return; }
@@ -169,7 +182,7 @@ export default async function render(root) {
   // ---------- 오른쪽 편집기 ----------
   function renderEditor() {
     const p = cur();
-    const tabBtns = [['groups', '유형 (그룹)'], ['states', '상태 필터']].map(([id, label]) =>
+    const tabBtns = [['groups', t('presets.subGroups')], ['states', t('presets.subStates')]].map(([id, label]) =>
       h('button', {
         type: 'button', role: 'tab', class: id === subtab ? 'active' : '', 'aria-selected': id === subtab ? 'true' : 'false',
         onclick: () => { subtab = id; lsSet('presets.sub', id); tabBtns.forEach((b, k) => { const on = (k === 0) === (id === 'groups'); b.classList.toggle('active', on); b.setAttribute('aria-selected', String(on)); }); drawTab(); },
@@ -190,11 +203,11 @@ export default async function render(root) {
   }
 
   async function addPreset() {
-    const v = await promptDialog('새 프리셋 이름', store.uniquePresetName('새 프리셋'), { ok: '만들기' });
+    const v = await promptDialog(t('presets.addTitle'), store.uniquePresetName(t('presets.addDefault')), { ok: t('presets.addOk') });
     if (v === null) return false;
     const nn = v.trim();
-    if (!nn) { toast('이름을 비워 둘 수 없습니다.', 'warn'); return false; }
-    if (model.presets.some((q) => q.name === nn)) { toast(`'${nn}' 이름의 프리셋이 이미 있습니다.`, 'warn'); return false; }
+    if (!nn) { toast(t('presets.errEmpty'), 'warn'); return false; }
+    if (model.presets.some((q) => q.name === nn)) { toast(t('presets.errExists', { name: nn }), 'warn'); return false; }
     model.presets.push({ name: nn, groups: [], filteredStates: [], alwaysShownStates: [], extra: {} });
     store.commit('add-preset');
     selName = nn; lsSet('presets.sel', nn);
@@ -208,8 +221,8 @@ export default async function render(root) {
 
 function panelHead() {
   return h('div', { class: 'panel-head' },
-    h('h2', {}, '프리셋 (표시 대상)'),
-    h('p', {}, '오버뷰 탭이 보여줄 유형(그룹)과 상태 필터를 정합니다.'));
+    h('h2', {}, t('presets.headTitle')),
+    h('p', {}, t('presets.headDesc')));
 }
 
 // =====================================================================
@@ -240,7 +253,7 @@ function groupsTab(p, { onChanged, rebuild }) {
   const unkNote = h('span', { class: 'warn small' });
   const chipsEl = h('div', { class: 'pr-chips' });
   function updateSummary() {
-    totalEl.textContent = `총 ${sel.size}개 선택`;
+    totalEl.textContent = t('presets.total', { n: sel.size });
     const counts = new Map();
     let unknown = 0;
     for (const id of sel) {
@@ -248,10 +261,12 @@ function groupsTab(p, { onChanged, rebuild }) {
       if (!g) { unknown++; continue; }
       counts.set(g.cat, (counts.get(g.cat) || 0) + 1);
     }
-    unkNote.textContent = unknown ? `· 알 수 없는 그룹 ${unknown}개 포함` : '';
-    chipsEl.replaceChildren(...order.filter((c) => counts.has(c)).map((c) =>
-      h('button', { type: 'button', class: 'chip pr-chip', title: `${catName(c).en} — 클릭하면 해당 카테고리로 이동`, dataset: { cat: c } },
-        catName(c).ko, h('b', {}, counts.get(c)))));
+    unkNote.textContent = unknown ? t('presets.unkNote', { n: unknown }) : '';
+    chipsEl.replaceChildren(...order.filter((c) => counts.has(c)).map((c) => {
+      const nm = catName(c);
+      return h('button', { type: 'button', class: 'chip pr-chip', title: nm.alt ? `${nm.alt} — ${t('presets.chipTitle')}` : t('presets.chipTitle'), dataset: { cat: c } },
+        nm.name, h('b', {}, counts.get(c)));
+    }));
     for (const rec of cats.values()) refreshCat(rec);
   }
   chipsEl.addEventListener('click', (e) => {
@@ -265,7 +280,7 @@ function groupsTab(p, { onChanged, rebuild }) {
 
   // ----- 카테고리 트리 -----
   const tree = h('div', { class: 'pr-tree' });
-  const emptyEl = h('p', { class: 'muted pr-empty hidden' }, '조건에 맞는 항목이 없습니다.');
+  const emptyEl = h('p', { class: 'muted pr-empty hidden' }, t('presets.emptyMatch'));
   const statusEl = h('span', { class: 'hint pr-status' });
 
   const passes = (g, rec) => {
@@ -291,8 +306,8 @@ function groupsTab(p, { onChanged, rebuild }) {
       if (!passes(g, rec)) continue;
       frag.append(h('label', { class: 'pr-row' },
         h('input', { type: 'checkbox', dataset: { gid: g.id }, checked: sel.has(g.id) }),
-        h('span', { class: 'pr-ko' }, g.ko),
-        g.en && g.en !== g.ko ? h('span', { class: 'pr-en' }, g.en) : null,
+        h('span', { class: 'pr-ko', title: g.name }, g.name),
+        g.alt ? h('span', { class: 'pr-en', title: g.alt }, g.alt) : null,
         h('span', { class: 'pr-id mono' }, g.id)));
     }
     rec.body.replaceChildren(frag);
@@ -308,23 +323,23 @@ function groupsTab(p, { onChanged, rebuild }) {
     const nodes = visible.map((c) => {
       const nm = catName(c);
       const list = byCat.get(c);
-      const cb = h('input', { type: 'checkbox', dataset: { catcb: c }, 'aria-label': `${nm.ko} 카테고리 전체 선택/해제` });
+      const cb = h('input', { type: 'checkbox', dataset: { catcb: c }, 'aria-label': t('presets.catAria', { name: nm.name }) });
       const countEl = h('span', { class: 'pr-cat-count' });
       const body = h('div', { class: 'pr-cat-body' });
       const details = h('details', { class: 'pr-cat', dataset: { cat: c } },
         h('summary', { class: 'pr-cat-head' }, cb,
-          h('span', { class: 'pr-cat-name' }, nm.ko, nm.en && nm.en !== nm.ko ? h('span', { class: 'pr-en' }, nm.en) : null,
+          h('span', { class: 'pr-cat-name' }, nm.name, nm.alt ? h('span', { class: 'pr-en' }, nm.alt) : null,
             h('span', { class: 'pr-id mono' }, `#${c}`)),
           countEl),
         body);
-      const rec = { id: c, list, cb, countEl, body, details, built: false, auto: false, nameHit: false, nameSearch: `${nm.ko} ${nm.en}`.toLowerCase() };
+      const rec = { id: c, list, cb, countEl, body, details, built: false, auto: false, nameHit: false, nameSearch: nm.search };
       if (wasOpen.has(c)) details.open = true;
       cats.set(c, rec);
       return details;
     });
     tree.replaceChildren(...nodes);
     for (const rec of cats.values()) refreshCat(rec);
-    catInfo.textContent = prefs.showAll ? `카테고리 ${visible.length}개 (전체)` : `카테고리 ${visible.length}개 / 전체 ${order.length}개`;
+    catInfo.textContent = prefs.showAll ? t('presets.catInfoAll', { n: visible.length }) : t('presets.catInfoSome', { n: visible.length, total: order.length });
     applyFilter();
   }
 
@@ -351,7 +366,7 @@ function groupsTab(p, { onChanged, rebuild }) {
       }
     }
     emptyEl.classList.toggle('hidden', shown > 0);
-    statusEl.textContent = filtering ? `${matched}개 그룹 · ${shown}개 카테고리 표시 중` : '';
+    statusEl.textContent = filtering ? t('presets.status', { groups: matched, cats: shown }) : '';
   }
 
   // 펼칠 때 지연 생성 (toggle 은 버블링되지 않으므로 캡처로 받는다)
@@ -389,13 +404,13 @@ function groupsTab(p, { onChanged, rebuild }) {
     if (!ids.length) { unkBox.replaceChildren(); return; }
     unkBox.replaceChildren(
       h('div', { class: 'pr-unk-head' },
-        h('strong', { class: 'warn' }, `알 수 없는 그룹 ${ids.length}개`),
-        h('span', { class: 'hint' }, '현재 게임 데이터에 없는(삭제된) 그룹입니다. 남겨 둬도 되지만 보통은 제거해도 무방합니다.'),
-        h('button', { type: 'button', class: 'btn small danger', dataset: { rmAll: '' } }, '모두 제거')),
+        h('strong', { class: 'warn' }, t('presets.unkHead', { n: ids.length })),
+        h('span', { class: 'hint' }, t('presets.unkDesc')),
+        h('button', { type: 'button', class: 'btn small danger', dataset: { rmAll: '' } }, t('presets.unkRemoveAll'))),
       h('div', { class: 'pr-unk-list' }, ids.map((id) =>
         h('span', { class: 'chip pr-unk' },
-          h('span', { class: 'mono' }, `#${id}`), ' (알 수 없음/삭제된 그룹)',
-          h('button', { type: 'button', class: 'btn ghost small', 'aria-label': `#${id} 제거`, title: '제거', dataset: { rm: id } }, '✕')))));
+          h('span', { class: 'mono' }, `#${id}`), t('presets.unkChip'),
+          h('button', { type: 'button', class: 'btn ghost small', 'aria-label': t('presets.unkRemoveAria', { id }), title: t('presets.unkRemoveTitle'), dataset: { rm: id } }, '✕')))));
   }
   unkBox.addEventListener('click', (e) => {
     const b = e.target.closest('button');
@@ -407,7 +422,7 @@ function groupsTab(p, { onChanged, rebuild }) {
   });
 
   // ----- 도구 막대 -----
-  const search = h('input', { type: 'search', class: 'input grow pr-search', placeholder: '검색: 한글/영문 이름 또는 ID', 'aria-label': '그룹 검색', value: prefs.q });
+  const search = h('input', { type: 'search', class: 'input grow pr-search', placeholder: t('presets.searchPh'), 'aria-label': t('presets.searchAria'), value: prefs.q });
   search.addEventListener('input', debounce(() => { prefs.q = search.value; applyFilter(); }, 120));
   const onlySel = h('input', { type: 'checkbox', checked: prefs.onlySel });
   onlySel.addEventListener('change', () => { prefs.onlySel = onlySel.checked; applyFilter(); });
@@ -416,10 +431,10 @@ function groupsTab(p, { onChanged, rebuild }) {
   const catInfo = h('span', { class: 'hint' });
 
   const others = model.presets.map((o, i) => ({ o, i })).filter(({ o }) => o !== p);
-  const srcSel = h('select', { 'aria-label': '가져올 프리셋' }, others.map(({ o, i }) => h('option', { value: i }, `${o.name} (${uniqueCount(o.groups)})`)));
-  const modeSel = h('select', { 'aria-label': '가져오기 방식' },
-    h('option', { value: 'merge' }, '합치기 (합집합)'), h('option', { value: 'intersect' }, '교집합만 남기기'),
-    h('option', { value: 'subtract' }, '빼기 (차집합)'), h('option', { value: 'replace' }, '완전히 교체'));
+  const srcSel = h('select', { 'aria-label': t('presets.importSrcAria') }, others.map(({ o, i }) => h('option', { value: i }, `${o.name} (${uniqueCount(o.groups)})`)));
+  const modeSel = h('select', { 'aria-label': t('presets.importModeAria') },
+    h('option', { value: 'merge' }, t('presets.modeMerge')), h('option', { value: 'intersect' }, t('presets.modeIntersect')),
+    h('option', { value: 'subtract' }, t('presets.modeSubtract')), h('option', { value: 'replace' }, t('presets.modeReplace')));
   const importBtn = h('button', {
     type: 'button', class: 'btn', disabled: !others.length,
     onclick: () => {
@@ -434,10 +449,14 @@ function groupsTab(p, { onChanged, rebuild }) {
       p.groups = [...next];
       store.commit('preset-import');
       onChanged();
-      toast(`'${src.name}' ${modeSel.selectedOptions[0].textContent.split(' ')[0]}: ${before}개 → ${next.size}개`, 'ok', 2500);
+      toast(t('presets.importDone', {
+        name: src.name,
+        mode: t(`presets.mode${mode[0].toUpperCase()}${mode.slice(1)}Short`),
+        before, n: next.size,
+      }), 'ok', 2500);
       rebuild();
     },
-  }, '적용');
+  }, t('presets.importApply'));
   const clearBtn = h('button', {
     type: 'button', class: 'btn danger',
     onclick: () => {
@@ -446,20 +465,20 @@ function groupsTab(p, { onChanged, rebuild }) {
       p.groups = [];
       store.commit('preset-clear');
       onChanged();
-      toast(`${n}개 선택을 모두 해제했습니다. (되돌리기 가능)`, 'ok', 2200);
+      toast(t('presets.clearDone', { n }), 'ok', 2200);
       rebuild();
     },
-  }, '전체 해제');
+  }, t('presets.clearAll'));
 
   const el = h('div', { class: 'pr-groups-tab' },
     h('div', { class: 'pr-summary' }, h('div', { class: 'pr-summary-line' }, totalEl, unkNote), chipsEl),
     h('div', { class: 'toolbar' }, search,
-      h('label', { class: 'check' }, onlySel, '선택된 것만 보기'),
-      h('label', { class: 'check' }, showAll, '모든 카테고리 표시'),
-      h('button', { type: 'button', class: 'btn small', onclick: () => { for (const r of cats.values()) if (!r.details.classList.contains('hidden')) { r.details.open = true; fillBody(r); } } }, '모두 펼치기'),
-      h('button', { type: 'button', class: 'btn small', onclick: () => { for (const r of cats.values()) { r.details.open = false; r.auto = false; } } }, '모두 접기')),
+      h('label', { class: 'check' }, onlySel, t('presets.onlySel')),
+      h('label', { class: 'check' }, showAll, t('presets.showAll')),
+      h('button', { type: 'button', class: 'btn small', onclick: () => { for (const r of cats.values()) if (!r.details.classList.contains('hidden')) { r.details.open = true; fillBody(r); } } }, t('presets.expandAll')),
+      h('button', { type: 'button', class: 'btn small', onclick: () => { for (const r of cats.values()) { r.details.open = false; r.auto = false; } } }, t('presets.collapseAll'))),
     h('div', { class: 'toolbar pr-bulk' },
-      h('span', { class: 'muted small' }, '다른 프리셋에서 가져오기'), srcSel, modeSel, importBtn,
+      h('span', { class: 'muted small' }, t('presets.importFrom')), srcSel, modeSel, importBtn,
       h('span', { class: 'spacer-grow' }), clearBtn),
     h('div', { class: 'pr-metaline' }, catInfo, statusEl),
     tree, emptyEl, unkBox);
@@ -479,26 +498,26 @@ function statesTab(p, { rebuild }) {
     const f = p.filteredStates.includes(id), a = p.alwaysShownStates.includes(id);
     return f && a ? 'both' : f ? 'hide' : a ? 'show' : 'default';
   };
-  const OPTS = [['default', '기본'], ['hide', '숨김'], ['show', '항상 표시']];
+  const OPTS = [['default', t('presets.optDefault')], ['hide', t('presets.optHide')], ['show', t('presets.optShow')]];
 
   const sumEl = h('div', { class: 'pr-summary-line' });
   function updateSummary() {
     const nf = uniqueCount(p.filteredStates), na = uniqueCount(p.alwaysShownStates);
-    sumEl.replaceChildren(h('strong', {}, `숨김 ${nf}개`), ' · ', h('strong', {}, `항상 표시 ${na}개`),
-      ' ', h('span', { class: 'muted small' }, '(나머지는 기본)'));
+    sumEl.replaceChildren(h('strong', {}, t('presets.sumHide', { n: nf })), ' · ', h('strong', {}, t('presets.sumShow', { n: na })),
+      ' ', h('span', { class: 'muted small' }, t('presets.sumRest')));
   }
 
   function rowFor(id) {
     const known = STATES[id];
     const row = h('div', { class: 'pr-state', dataset: { sid: id } },
       h('div', { class: 'pr-state-name' },
-        known && colorCss(known.color) ? h('span', { class: 'swatch', style: { background: colorCss(known.color) }, title: `기본 색: ${known.color}` }) : null,
+        known && colorCss(known.color) ? h('span', { class: 'swatch', style: { background: colorCss(known.color) }, title: t('presets.defaultColor', { color: colorLabel(known.color) }) }) : null,
         h('div', {},
           h('div', {}, stateName(id), ' ',
-            known?.filterOnly ? h('span', { class: 'badge', title: '36/37 은 프리셋 필터에서만 쓰이는 잔해 상태이며 깃발/배경 색상에는 사용할 수 없습니다.' }, '필터 전용 · 잔해 상태') : null,
-            h('span', { class: 'pr-conflict warn small hidden' }, ' ⚠ 숨김과 항상 표시에 모두 들어 있음 — 하나를 고르세요')),
-          h('div', { class: 'pr-en' }, known ? stateNameEn(id) : '게임 데이터에 없는 상태 (값은 그대로 유지됩니다)', ' · ', h('span', { class: 'mono' }, `#${id}`)))),
-      h('div', { class: 'pr-seg', role: 'radiogroup', 'aria-label': `${stateName(id)} 표시 방식` },
+            known?.filterOnly ? h('span', { class: 'badge', title: t('presets.filterOnlyTitle') }, t('presets.filterOnly')) : null,
+            h('span', { class: 'pr-conflict warn small hidden' }, ` ${t('presets.conflict')}`)),
+          h('div', { class: 'pr-en' }, known ? (getLang() !== 'en' && stateNameEn(id) !== stateName(id) ? [stateNameEn(id), ' · '] : '') : [t('presets.unknownState'), ' · '], h('span', { class: 'mono' }, `#${id}`)))),
+      h('div', { class: 'pr-seg', role: 'radiogroup', 'aria-label': t('presets.stateAria', { name: stateName(id) }) },
         OPTS.map(([v, label]) => h('label', { class: `pr-seg-${v}` },
           h('input', { type: 'radio', name: `pr-st-${p.name}-${id}`, value: v }), h('span', {}, label)))));
     paintRow(row);
@@ -512,13 +531,13 @@ function statesTab(p, { rebuild }) {
   }
 
   const wrap = h('div', { class: 'pr-states' });
-  for (const [kind, label] of Object.entries(STATE_KINDS)) {
+  for (const kind of STATE_KIND_IDS) {
     const ids = ALL_STATE_IDS.filter((id) => STATES[id].kind === kind);
     if (!ids.length) continue;
-    wrap.append(h('section', { class: 'pr-kind' }, h('h4', {}, label), ids.map(rowFor)));
+    wrap.append(h('section', { class: 'pr-kind' }, h('h4', {}, kindName(kind)), ids.map(rowFor)));
   }
   const unk = [...new Set([...p.filteredStates, ...p.alwaysShownStates])].filter((id) => !STATES[id]).sort(numAsc);
-  if (unk.length) wrap.append(h('section', { class: 'pr-kind' }, h('h4', {}, '알 수 없는 상태'), unk.map(rowFor)));
+  if (unk.length) wrap.append(h('section', { class: 'pr-kind' }, h('h4', {}, t('presets.unknownStates')), unk.map(rowFor)));
 
   wrap.addEventListener('change', (e) => {
     const t = e.target;
@@ -535,7 +554,7 @@ function statesTab(p, { rebuild }) {
   });
 
   const others = model.presets.filter((o) => o !== p);
-  const srcSel = h('select', { 'aria-label': '상태 설정을 복사할 프리셋' }, others.map((o) => h('option', { value: model.presets.indexOf(o) }, o.name)));
+  const srcSel = h('select', { 'aria-label': t('presets.copyAria') }, others.map((o) => h('option', { value: model.presets.indexOf(o) }, o.name)));
   const copyBtn = h('button', {
     type: 'button', class: 'btn', disabled: !others.length,
     onclick: () => {
@@ -544,29 +563,29 @@ function statesTab(p, { rebuild }) {
       p.filteredStates = [...src.filteredStates];
       p.alwaysShownStates = [...src.alwaysShownStates];
       store.commit('preset-states-copy');
-      toast(`'${src.name}' 의 상태 설정을 복사했습니다.`, 'ok', 2000);
+      toast(t('presets.copyDone', { name: src.name }), 'ok', 2000);
       rebuild();
     },
-  }, '상태 설정 복사');
+  }, t('presets.copyBtn'));
   const resetBtn = h('button', {
     type: 'button', class: 'btn danger',
     onclick: () => {
       if (!p.filteredStates.length && !p.alwaysShownStates.length) return;
       p.filteredStates = []; p.alwaysShownStates = [];
       store.commit('preset-states-reset');
-      toast('모든 상태를 기본으로 되돌렸습니다. (되돌리기 가능)', 'ok', 2000);
+      toast(t('presets.resetDone'), 'ok', 2000);
       rebuild();
     },
-  }, '모두 기본으로');
+  }, t('presets.resetAll'));
 
   updateSummary();
   return h('div', { class: 'pr-states-tab' },
     h('p', { class: 'hint pr-explain' },
-      h('b', {}, '숨김'), '(filteredStates): 이 상태에 해당하는 대상은 오버뷰에서 숨겨집니다. ',
-      h('b', {}, '항상 표시'), '(alwaysShownStates): 그룹 선택과 무관하게 항상 표시됩니다. 한 상태는 둘 중 하나에만 넣을 수 있습니다.'),
+      h('b', {}, t('presets.optHide')), ' (filteredStates)', t('presets.explainHide'), ' ',
+      h('b', {}, t('presets.optShow')), ' (alwaysShownStates)', t('presets.explainShow'), ' ', t('presets.explainOne')),
     h('div', { class: 'pr-summary' }, sumEl),
     h('div', { class: 'toolbar pr-bulk' },
-      h('span', { class: 'muted small' }, '다른 프리셋에서 복사'), srcSel, copyBtn,
+      h('span', { class: 'muted small' }, t('presets.copyFrom')), srcSel, copyBtn,
       h('span', { class: 'spacer-grow' }), resetBtn),
     wrap);
 }

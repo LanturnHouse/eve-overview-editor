@@ -21,7 +21,7 @@ const sortedPairs = (obj) => Object.keys(obj).sort(cmp).map((k) => [k, obj[k]]);
 
 export function parseOverview(text) {
   const doc = yaml.load(text);
-  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw new Error('오버뷰 YAML 형식이 아닙니다.');
+  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) throw Object.assign(new Error('Not an EVE overview YAML file'), { code: 'notOverview' });
   const m = {
     presets: [], tabs: [], shipLabelOrder: [], shipLabels: [],
     flagOrder: [], flagStates: [], backgroundOrder: [], backgroundStates: [],

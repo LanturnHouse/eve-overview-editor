@@ -1,12 +1,13 @@
 // 깃발 · 배경 색상 패널: 상태별 우선순위 / 활성 / 색 / 깜빡임.
 import { store } from '../store.js';
 import { h, makeSortable, moveItem, gripHandle } from '../ui.js';
-import { STATES, STATE_KINDS, APPEARANCE_STATE_IDS, stateName, stateNameEn, COLOR_NAMES, COLOR_KO, colorCss } from '../data.js';
+import { STATES, APPEARANCE_STATE_IDS, stateName, stateNameEn, kindName, COLOR_NAMES, colorLabel, colorCss } from '../data.js';
+import { t } from '../i18n.js';
 
-const MODES = {
-  flag: { label: '깃발', what: '아이콘 우하단의 작은 색 깃발' },
-  background: { label: '배경', what: '줄 배경색' },
-};
+const MODE_IDS = ['flag', 'background'];
+const modeLabel = (p) => t(`appearance.mode.${p}`);
+// 색 이름 표시: "표시명 (yaml 이름)" (같은 글자면 하나만)
+const colorText = (c) => { const l = colorLabel(c); return l.toLowerCase() === c.toLowerCase() ? l : `${l} (${c})`; };
 let mode = 'flag'; // 다시 그려져도 서브탭 유지
 
 const orderKey = (p) => `${p}Order`;
@@ -33,12 +34,12 @@ const SAMPLE_NAMES = ['Aria Voss', 'Kellan Drex', 'Mira Solenne', 'Toren Halek',
 export default async function render(root) {
   root.replaceChildren();
   const body = h('div');
-  const tabs = Object.entries(MODES).map(([p, m]) =>
+  const tabs = MODE_IDS.map((p) =>
     h('button', {
       type: 'button', role: 'tab', 'data-mode': p,
       onclick: () => { mode = p; drawTabs(); drawBody(); },
-    }, m.label));
-  const tabBar = h('div', { class: 'subtabs', role: 'tablist', 'aria-label': '깃발 / 배경 선택' }, tabs);
+    }, modeLabel(p)));
+  const tabBar = h('div', { class: 'subtabs', role: 'tablist', 'aria-label': t('appearance.tabsAria') }, tabs);
   const drawTabs = () => tabs.forEach((b) => {
     const on = b.dataset.mode === mode;
     b.classList.toggle('active', on);
@@ -47,27 +48,26 @@ export default async function render(root) {
 
   root.append(
     h('div', { class: 'panel-head' },
-      h('h2', {}, '깃발 · 배경 색상'),
-      h('p', {}, '오버뷰 각 줄의 상태 깃발(아이콘 우하단에 작게 표시되는 색 표시)과 줄 배경색의 우선순위·색·깜빡임을 정합니다.')),
+      h('h2', {}, t('appearance.title')),
+      h('p', {}, t('appearance.intro'))),
     tabBar, body);
   drawTabs();
 
   function drawBody() {
     const p = mode;
-    const info = MODES[p];
-    const list = h('div', { class: 'ap-list', role: 'list', 'aria-label': `${info.label} 우선순위 목록` });
-    const preview = h('div', { class: 'preview ap-preview', 'aria-label': `${info.label} 미리보기` });
+    const list = h('div', { class: 'ap-list', role: 'list', 'aria-label': t('appearance.listAria', { mode: modeLabel(p) }) });
+    const preview = h('div', { class: 'preview ap-preview', 'aria-label': t('appearance.previewAria', { mode: modeLabel(p) }) });
     const counter = h('span', { class: 'chip' });
 
     const refreshPreview = () => {
       const all = rowIds(p);
       const ids = all.filter((id) => isActive(p, id)).slice(0, 6);
       const rows = ids.map((id, i) => previewRow(p, id, `${(i * 7 + 3) % 40}.${(i * 3 + 1) % 10} km`, SAMPLE_NAMES[i % SAMPLE_NAMES.length]));
-      rows.push(previewRow(p, null, '84.1 km', '상태 없는 일반 줄'));
+      rows.push(previewRow(p, null, '84.1 km', t('appearance.sampleNone')));
       preview.replaceChildren(
-        h('div', { class: 'ap-prev-title muted' }, `${info.what} - 활성 상태 중 우선순위 상위 ${ids.length}개`),
+        h('div', { class: 'ap-prev-title muted' }, t('appearance.previewTitle', { what: t(`appearance.what.${p}`), n: ids.length })),
         ...rows);
-      counter.textContent = `활성 ${all.filter((id) => isActive(p, id)).length} / 전체 ${all.length}`;
+      counter.textContent = t('appearance.counter', { a: all.filter((id) => isActive(p, id)).length, n: all.length });
     };
 
     const ctx = { refreshPreview, drawList: null };
@@ -94,11 +94,11 @@ export default async function render(root) {
       h('div', { class: 'ap-layout' },
         h('div', { class: 'card ap-main' },
           h('div', { class: 'toolbar' }, counter,
-            h('span', { class: 'hint ap-hint' }, '우선순위는 위에서 아래로: 맨 위(번호가 작은) 활성 상태 하나의 색이 먼저 적용됩니다. 끌어서 또는 ▲▼ 로 순서를 바꾸세요.')),
+            h('span', { class: 'hint ap-hint' }, t('appearance.priorityHint'))),
           list),
         h('div', { class: 'card ap-side' },
-          h('h3', {}, '미리보기'),
-          h('p', { class: 'hint' }, '색 이름의 미리보기 색은 근사값입니다. 실제 게임 색과 약간 다를 수 있습니다.'),
+          h('h3', {}, t('appearance.previewHeading')),
+          h('p', { class: 'hint' }, t('appearance.previewNote')),
           preview)));
     drawList();
   }
@@ -116,7 +116,7 @@ function previewRow(p, id, dist, pilot) {
       !isBg && css ? h('span', { class: 'ap-flagbox', style: { background: css } }) : null),
     h('span', { class: 'ap-prow-dist' }, dist),
     h('span', { class: 'ap-prow-name' }, pilot),
-    h('span', { class: 'ap-prow-state' }, id === null ? '' : `${stateName(id)}${blink ? ' · 깜빡임' : ''}`));
+    h('span', { class: 'ap-prow-state' }, id === null ? '' : blink ? t('appearance.stateBlink', { name: stateName(id) }) : stateName(id)));
 }
 
 function stateRow(p, id, i, total, ctx) {
@@ -127,7 +127,7 @@ function stateRow(p, id, i, total, ctx) {
 
   const swatch = h('span', { class: 'swatch', 'aria-hidden': 'true' });
   const active = h('input', {
-    type: 'checkbox', checked: isActive(p, id), 'aria-label': `${stateName(id)} 사용`,
+    type: 'checkbox', checked: isActive(p, id), 'aria-label': t('appearance.useAria', { name: stateName(id) }),
     onchange: () => {
       normalizeOrder(p);
       const arr = m[statesKey(p)];
@@ -142,20 +142,20 @@ function stateRow(p, id, i, total, ctx) {
   const cur = m.stateColors[key];
   const defName = st?.color;
   const sel = h('select', {
-    class: 'ap-color', 'aria-label': `${stateName(id)} 색`,
+    class: 'ap-color', 'aria-label': t('appearance.colorAria', { name: stateName(id) }),
     onchange: () => {
       normalizeOrder(p);
       if (sel.value === '') delete m.stateColors[key]; else m.stateColors[key] = sel.value;
       sync(); store.commit(`${p}-color`); ctx.refreshPreview();
     },
   },
-  h('option', { value: '' }, `기본값${defName ? ` (${COLOR_KO[defName] ?? defName})` : ''}`),
-  ...Object.keys(COLOR_NAMES).map((c) => h('option', { value: c }, `${COLOR_KO[c] ?? c} (${c})`)),
-  cur !== undefined && !(cur in COLOR_NAMES) ? h('option', { value: String(cur) }, `${cur} (알 수 없는 색)`) : null);
+  h('option', { value: '' }, defName ? t('appearance.defaultWith', { color: colorLabel(defName) }) : t('appearance.default')),
+  ...Object.keys(COLOR_NAMES).map((c) => h('option', { value: c }, colorText(c))),
+  cur !== undefined && !(cur in COLOR_NAMES) ? h('option', { value: String(cur) }, t('appearance.unknownColor', { color: cur })) : null);
   sel.value = cur === undefined ? '' : String(cur);
 
   const blink = h('input', {
-    type: 'checkbox', checked: isBlink(p, id), 'aria-label': `${stateName(id)} 깜빡임`,
+    type: 'checkbox', checked: isBlink(p, id), 'aria-label': t('appearance.blinkAria', { name: stateName(id) }),
     onchange: () => {
       normalizeOrder(p);
       if (blink.checked) m.stateBlinks[key] = true; else delete m.stateBlinks[key];
@@ -173,23 +173,23 @@ function stateRow(p, id, i, total, ctx) {
   const row = h('div', { class: 'ap-row', role: 'listitem', draggable: 'true', dataset: { sortable: '', id } },
     h('span', { class: 'ap-num' }, i + 1),
     gripHandle(),
-    h('label', { class: 'check ap-active', title: '이 상태를 활성화' }, active, h('span', {}, '사용')),
+    h('label', { class: 'check ap-active', title: t('appearance.useTitle') }, active, h('span', {}, t('appearance.use'))),
     swatch,
     h('div', { class: 'ap-name' },
-      h('div', { class: 'ap-ko' }, stateName(id), known ? null : h('span', { class: 'badge warn' }, '미확인')),
+      h('div', { class: 'ap-ko' }, stateName(id), known ? null : h('span', { class: 'badge warn' }, t('appearance.unknown'))),
       h('div', { class: 'ap-en muted small' }, known ? stateNameEn(id) : `ID ${id}`)),
-    h('span', { class: 'badge ap-kind' }, known ? (STATE_KINDS[st.kind] ?? st.kind) : '?'),
+    h('span', { class: 'badge ap-kind' }, known ? kindName(st.kind) : '?'),
     sel,
-    h('label', { class: 'check ap-blink' }, blink, h('span', {}, '깜빡임')),
+    h('label', { class: 'check ap-blink' }, blink, h('span', {}, t('appearance.blink'))),
     h('span', { class: 'ap-moves' },
-      h('button', { type: 'button', class: 'btn small', dataset: { act: 'up' }, disabled: i === 0, title: '위로', 'aria-label': `${stateName(id)} 위로`, onclick: () => move(-1) }, '▲'),
-      h('button', { type: 'button', class: 'btn small', dataset: { act: 'down' }, disabled: i === total - 1, title: '아래로', 'aria-label': `${stateName(id)} 아래로`, onclick: () => move(1) }, '▼')));
+      h('button', { type: 'button', class: 'btn small', dataset: { act: 'up' }, disabled: i === 0, title: t('appearance.up'), 'aria-label': t('appearance.upAria', { name: stateName(id) }), onclick: () => move(-1) }, '▲'),
+      h('button', { type: 'button', class: 'btn small', dataset: { act: 'down' }, disabled: i === total - 1, title: t('appearance.down'), 'aria-label': t('appearance.downAria', { name: stateName(id) }), onclick: () => move(1) }, '▼')));
 
   function sync() {
     const name = colorName(p, id);
     const css = cssOf(name);
     swatch.style.background = css ?? 'transparent';
-    swatch.title = `${name ? (COLOR_KO[name] ?? name) : '색 없음'}${css ? ` (${css})` : ''}`;
+    swatch.title = `${name ? colorLabel(name) : t('appearance.noColor')}${css ? ` (${css})` : ''}`;
     row.classList.toggle('inactive', !active.checked);
   }
   sync();
