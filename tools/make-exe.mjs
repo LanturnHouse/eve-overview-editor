@@ -95,6 +95,8 @@ console.log(`${exe}: ${(size / 1e6).toFixed(1)} MB, ${Object.keys(assets).length
 
 // ---- 5) 바로 실행해서 확인 (브라우저는 열지 않는다) ----
 async function smokeTest() {
+  const dataDir = path.join(path.dirname(exe), 'EVE-Overview-Editor-data');   // 시험 실행이 exe 옆에 만드는 폴더는 배포물(dist/)에 남기지 않는다
+  const dataDirExisted = fs.existsSync(dataDir);
   const port = await new Promise((res) => { const s = net.createServer().listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)); }); });
   const child = spawn(exe, [], { env: { ...process.env, PORT: String(port), EVE_NO_OPEN: '1' }, stdio: 'ignore', windowsHide: true });
   const get = (p) => new Promise((resolve, reject) => {
@@ -113,7 +115,10 @@ async function smokeTest() {
     }
     if ((await get('/definitely-not-there.js')).code !== 404) throw new Error('smoke test: missing file should be 404');
     console.log('smoke test passed: the exe serves the editor on its own');
-  } finally { child.kill(); }
+  } finally {
+    child.kill();
+    if (!dataDirExisted) { await new Promise((x) => setTimeout(x, 500)); await fs.promises.rm(dataDir, { recursive: true, force: true }).catch(() => {}); }
+  }
 }
 if (!flag('no-test')) await smokeTest();
 console.log(`sha256: ${crypto.createHash('sha256').update(fs.readFileSync(exe)).digest('hex')}`);
