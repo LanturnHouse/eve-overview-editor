@@ -2,3 +2,4 @@ node_modules/
 backups/
 config.json
 *.log
+tools/_coverage.json

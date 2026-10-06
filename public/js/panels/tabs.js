@@ -4,10 +4,12 @@ import { store, clone } from '../store.js';
 import { BRACKET_SHOW_ALL } from '../model.js';
 import { ALL_COLUMNS, columnName } from '../data.js';
 import { renderMarkup, cssToArgb } from '../markup.js';
+import { symbolPicker } from './symbol-picker.js';
 
 let selected = 0;
 try { selected = parseInt(localStorage.getItem('tabs.selected'), 10) || 0; } catch { /* 저장소 사용 불가 */ }
 
+let symbolsOpen = false; // 탭을 바꿔도 특수문자 선택창 열림 상태 유지
 const MARKUP_TAG = /<\/?(?:color|fontsize|b|i|u|br)(?:=[^>]*)?>/gi;
 const plainText = (s) => String(s ?? '').replace(MARKUP_TAG, '');
 const nameHtml = (name) => renderMarkup(name) || '<span class="muted">(이름 없음)</span>';
@@ -162,10 +164,27 @@ export default async function render(root) {
           changed();
         }, '태그를 지우고 첫 글자에만 색을 입혀 다시 만듭니다'),
         mk('태그 모두 제거', () => { input.value = plainText(input.value); changed(); }, '마크업 태그를 지우고 글자만 남깁니다')));
+
+    // 특수문자 선택창: EVE 클라이언트 글꼴에 글리프가 있는 문자만
+    const picker = symbolPicker((ch) => insert(ch));
+    picker.classList.toggle('hidden', !symbolsOpen);
+    const symBtn = h('button', {
+      class: 'btn small', type: 'button', 'aria-expanded': String(symbolsOpen), 'aria-controls': 'tb-symbols',
+      title: 'EVE 에서 표시되는 특수문자만 모아 둔 선택창',
+      onclick: () => {
+        symbolsOpen = !symbolsOpen;
+        picker.classList.toggle('hidden', !symbolsOpen);
+        symBtn.setAttribute('aria-expanded', String(symbolsOpen));
+        symBtn.textContent = symbolsOpen ? '특수문자 닫기 ▴' : '특수문자 ▾';
+      },
+    }, symbolsOpen ? '특수문자 닫기 ▴' : '특수문자 ▾');
+    picker.id = 'tb-symbols';
+    helpers.append(h('div', { class: 'tb-help-row' }, h('span', { class: 'muted small' }, '특수문자'), symBtn,
+      h('span', { class: 'muted small' }, 'EVE 에서 실제로 표시되는 문자만')));
     return h('section', { class: 'card tb-card' },
       h('h3', {}, `탭 ${idx} 이름`),
       h('div', { class: 'field' }, h('label', { for: 'tb-name' }, '이름 (인게임 마크업 허용)'), input),
-      helpers,
+      helpers, picker,
       h('div', { class: 'field' }, h('span', { class: 'label' }, '미리보기'), prev));
   }
 
