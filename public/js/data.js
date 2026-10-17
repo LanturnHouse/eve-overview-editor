@@ -65,23 +65,31 @@ export const colorCss = (name) => COLOR_NAMES[name] ?? (name === 'gray' ? '#8080
 export const LABEL_TYPE_IDS = ['pilot name', 'ship type', 'ship name', 'corporation', 'alliance', 'faction', 'militia'];
 export const labelTypeName = (type) => (type === null || type === undefined ? t('data.labelSeparator') : tOrNull(`data.label.${type}`) ?? type);
 
-// 게임 오버뷰 유형 탭에 나오는 카테고리 (그 외는 "게임 목록에 없는 항목도 표시"를 켜야 보임)
-export const OVERVIEW_CATEGORIES = [25, 2, 8, 22, 18, 11, 87, 46, 6, 40, 23, 3, 65, 41, 17];
+// 게임 오버뷰 유형 탭에 나오는 카테고리 (게임 화면과 같은 순서. 그 외는 "게임 목록 외 그룹 표시"를 켜야 보임)
+// 맨 끝에 NPC(가상 카테고리, data/npc-groups.json)가 붙는다. Planetary Industry(41)와 Commodity(17)는 게임 목록에 없다.
+export const OVERVIEW_CATEGORIES = [11, 65, 46, 18, 40, 25, 23, 22, 3, 8, 2, 87, 6];
 
 let groupData = null;
 let listedIds = null;   // 게임 오버뷰 설정(필터 → 유형)에 실제로 나오는 그룹 ID (data/overview-groups.json), 없으면 null
+let npcData = null;     // 게임의 NPC 항목: 그룹 여러 개를 묶은 가상 그룹 6개 (data/npc-groups.json), 없으면 null
+let npcMembers = new Map();   // 그룹 ID -> 그 그룹이 속한 NPC 묶음의 key
 export async function loadGroupData() {
   if (!groupData) {
-    const [gd, listed] = await Promise.all([
-      fetch('data/groups.json').then((r) => r.json()),
-      fetch('data/overview-groups.json').then((r) => (r.ok ? r.json() : null)).catch(() => null),
-    ]);
+    const json = (url) => fetch(url).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    const [gd, listed, npc] = await Promise.all([fetch('data/groups.json').then((r) => r.json()), json('data/overview-groups.json'), json('data/npc-groups.json')]);
     groupData = gd;
     listedIds = Array.isArray(listed?.ids) ? new Set(listed.ids) : null;
+    npcData = npc && Array.isArray(npc.groups) && npc.groups.length ? npc : null;
+    npcMembers = new Map();
+    for (const g of npcData?.groups ?? []) for (const id of g.ids) npcMembers.set(id, g.key);
   }
   return groupData;
 }
 export const getGroupData = () => groupData;
+/** 게임의 NPC 항목 { category: {en,..}, groups: [{ key, names: {en,..}, ids: [그룹 ID] }] } 또는 null */
+export const getNpcData = () => npcData;
+/** 그룹 ID 가 NPC 묶음에 들어 있으면 그 묶음의 key, 아니면 undefined */
+export const npcGroupOf = (id) => npcMembers.get(id);
 /** 게임 오버뷰 설정의 유형 목록에 나오는 그룹인가. 목록 자료를 못 읽었으면 카테고리로 추정한다. */
 export const isListedGroup = (id) => {
   const g = groupEntry(id);

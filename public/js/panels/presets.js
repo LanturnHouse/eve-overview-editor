@@ -4,7 +4,7 @@ import { h, toast, confirmDialog, promptDialog, makeSortable, gripHandle, moveIt
 import { t, nameOf, getLang, getLocale } from '../i18n.js';
 import {
   STATES, STATE_KIND_IDS, ALL_STATE_IDS, stateName, stateNameEn, kindName, colorCss, colorLabel,
-  OVERVIEW_CATEGORIES, getGroupData, isListedGroup,
+  OVERVIEW_CATEGORIES, getGroupData, isListedGroup, getNpcData, npcGroupOf,
 } from '../data.js';
 
 // ---- 패널 전체에서 유지되는 화면 설정 (render 가 여러 번 불려도 유지) ----
@@ -23,6 +23,10 @@ const searchText = (entry, ...extra) => [...LANG_CODES.map((c) => entry?.[c]), .
 const enAlt = (entry, main) => (getLang() !== 'en' && entry?.en && entry.en !== main ? entry.en : null);
 
 // ---- 그룹 색인 (그룹 데이터가 바뀌지 않으므로 한 번만 계산) ----
+// 게임의 "NPC" 항목은 실제 카테고리가 아니라, 그룹 여러 개를 묶은 가상 그룹 6개(해적/미션/경찰/CONCORD/세관/팩션 해군)다.
+// 묶음에 들어 있는 그룹은 게임에서 Entity 에 따로 나오지 않는다. 묶음을 체크하면 그 그룹 ID 가 모두 프리셋에 들어가고,
+// 하나라도 들어 있으면 게임은 그 묶음을 체크된 것으로 본다. 편집기도 같게 보여 주되, 일부만 들어 있으면 그렇게 표시한다.
+const NPC_CAT = -1;   // 가상 카테고리 ID (실제 카테고리 ID 는 모두 양수)
 let idxFor = null, idxLang = null, idxCache = null;
 function groupIndex() {
   const gd = getGroupData();
@@ -33,16 +37,27 @@ function groupIndex() {
     const id = Number(sid);
     if (!byCat.has(g.cat)) byCat.set(g.cat, []);
     const name = nameOf(g) || String(id);
-    byCat.get(g.cat).push({ id, name, alt: enAlt(g, name), search: searchText(g, String(id)), listed: isListedGroup(id) });
+    byCat.get(g.cat).push({ id, name, alt: enAlt(g, name), search: searchText(g, String(id)), listed: isListedGroup(id), npc: npcGroupOf(id) ?? null });
   }
   for (const list of byCat.values()) list.sort((a, b) => nameCmp(a.name, b.name) || a.id - b.id);
-  const catEntry = (c) => gd.categories[c] ?? { en: `#${c}` };
+  const catEntry = (c) => (c === NPC_CAT ? getNpcData()?.category : gd.categories[c]) ?? { en: `#${c}` };
   const catName = (c) => { const e = catEntry(c); const name = nameOf(e) || `#${c}`; return { name, alt: enAlt(e, name), search: searchText(e) }; };
-  const rest = [...byCat.keys()].filter((c) => !OVERVIEW_CATEGORIES.includes(c))
+  const npc = getNpcData();
+  if (npc) {
+    byCat.set(NPC_CAT, npc.groups.map((ng) => {
+      const ids = ng.ids.filter((id) => gd.groups[id]);
+      const name = nameOf(ng.names) || ng.key;
+      // 묶음에 들어 있는 그룹의 이름으로도 찾을 수 있게 한다 (예: "Angel Cartel" -> 해적 NPC)
+      return { special: true, key: ng.key, ids, name, alt: enAlt(ng.names, name), listed: true, npc: null,
+        search: searchText(ng.names, ...ids.map((id) => searchText(gd.groups[id], String(id)))) };
+    }).sort((a, b) => nameCmp(a.name, b.name)));
+  }
+  const rest = [...byCat.keys()].filter((c) => c !== NPC_CAT && !OVERVIEW_CATEGORIES.includes(c))
     .sort((a, b) => nameCmp(catName(a).name, catName(b).name));
-  const order = [...OVERVIEW_CATEGORIES.filter((c) => byCat.has(c)), ...rest];
+  const order = [...OVERVIEW_CATEGORIES.filter((c) => byCat.has(c)), ...(byCat.has(NPC_CAT) ? [NPC_CAT] : []), ...rest];
   idxFor = gd; idxLang = lang;
-  idxCache = { gd, byCat, order, catName };
+  const npcName = new Map((byCat.get(NPC_CAT) ?? []).map((g) => [g.key, g.name]));
+  idxCache = { gd, byCat, order, catName, npcName };
   return idxCache;
 }
 
@@ -230,7 +245,7 @@ function panelHead() {
 // =====================================================================
 function groupsTab(p, { onChanged, rebuild }) {
   const model = store.model;
-  const { gd, byCat, order, catName } = groupIndex();
+  const { gd, byCat, order, catName, npcName } = groupIndex();
   const sel = new Set(p.groups);
   let q = '';
   /** @type {Map<number, any>} */
@@ -247,7 +262,17 @@ function groupsTab(p, { onChanged, rebuild }) {
       p.groups = p.groups.filter((x) => !rm.has(x));
     }
   };
-  const afterChange = () => { store.commit('preset-groups'); updateSummary(); updateUnknown(); onChanged(); };
+  const afterChange = () => { store.commit('preset-groups'); updateSummary(); updateUnknown(); syncRows(); onChanged(); };
+  /** 목록 항목이 가리키는 그룹 ID (NPC 묶음은 여러 개) */
+  const idsOf = (g) => (g.special ? g.ids : [g.id]);
+  /** 항목의 선택 상태: 0 = 없음, 1 = 일부(NPC 묶음만), 2 = 전부 */
+  const stateOf = (g) => {
+    if (!g.special) return sel.has(g.id) ? 2 : 0;
+    let n = 0;
+    for (const id of g.ids) if (sel.has(id)) n++;
+    return n === 0 ? 0 : n === g.ids.length ? 2 : 1;
+  };
+  const setBox = (input, g) => { const st = stateOf(g); input.checked = st === 2; input.indeterminate = st === 1; };
 
   // ----- 요약 -----
   const totalEl = h('strong', {});
@@ -256,12 +281,16 @@ function groupsTab(p, { onChanged, rebuild }) {
   function updateSummary() {
     totalEl.textContent = t('presets.total', { n: sel.size });
     const counts = new Map();
+    const npcTouched = new Set();   // 게임처럼, 하나라도 선택된 NPC 묶음의 수를 센다
     let unknown = 0;
     for (const id of sel) {
       const g = gd.groups[id];
       if (!g) { unknown++; continue; }
+      const k = byCat.has(NPC_CAT) ? npcGroupOf(id) : undefined;
+      if (k) { npcTouched.add(k); continue; }
       counts.set(g.cat, (counts.get(g.cat) || 0) + 1);
     }
+    if (npcTouched.size) counts.set(NPC_CAT, npcTouched.size);
     unkNote.textContent = unknown ? t('presets.unkNote', { n: unknown }) : '';
     chipsEl.replaceChildren(...order.filter((c) => counts.has(c)).map((c) => {
       const nm = catName(c);
@@ -285,17 +314,17 @@ function groupsTab(p, { onChanged, rebuild }) {
   const statusEl = h('span', { class: 'hint pr-status' });
 
   const passes = (g, rec) => {
-    if (prefs.onlySel && !sel.has(g.id)) return false;
+    if (prefs.onlySel && stateOf(g) === 0) return false;
     if (!q) return true;
     return rec.nameHit || g.search.includes(q);
   };
 
   function refreshCat(rec) {
-    let n = 0;
-    for (const g of rec.list) if (sel.has(g.id)) n++;
+    let n = 0, full = 0;
+    for (const g of rec.list) { const st = stateOf(g); if (st) n++; if (st === 2) full++; }
     const total = rec.list.length;
-    rec.cb.checked = n === total && total > 0;
-    rec.cb.indeterminate = n > 0 && n < total;
+    rec.cb.checked = full === total && total > 0;
+    rec.cb.indeterminate = n > 0 && !rec.cb.checked;
     rec.countEl.textContent = `${n}/${total}`;
     rec.details.classList.toggle('has-sel', n > 0);
   }
@@ -305,15 +334,40 @@ function groupsTab(p, { onChanged, rebuild }) {
     const frag = document.createDocumentFragment();
     for (const g of rec.list) {
       if (!passes(g, rec)) continue;
-      frag.append(h('label', { class: 'pr-row' },
-        h('input', { type: 'checkbox', dataset: { gid: g.id }, checked: sel.has(g.id) }),
-        h('span', { class: 'pr-ko', title: g.name }, g.name),
+      const box = h('input', { type: 'checkbox', dataset: g.special ? { npc: g.key } : { gid: g.id } });
+      setBox(box, g);
+      frag.append(h('label', { class: 'pr-row', title: g.special ? t('presets.npcTitle') : null },
+        box,
+        h('span', { class: 'pr-ko', title: g.special ? t('presets.npcTitle') : g.name }, g.name),
         g.alt ? h('span', { class: 'pr-en', title: g.alt }, g.alt) : null,
+        g.special ? partLabel(g) : null,
         g.listed ? null : h('span', { class: 'badge pr-unlisted', title: t('presets.unlistedTitle') }, t('presets.unlisted')),
-        h('span', { class: 'pr-id mono' }, g.id)));
+        g.npc ? h('span', { class: 'badge pr-unlisted', title: t('presets.inNpcTitle', { name: npcName.get(g.npc) ?? '' }) }, t('presets.inNpc')) : null,
+        h('span', { class: 'pr-id mono' }, g.special ? t(g.ids.length === 1 ? 'presets.npcCountOne' : 'presets.npcCount', { n: g.ids.length }) : g.id)));
     }
     rec.body.replaceChildren(frag);
     rec.built = true;
+  }
+  /** NPC 묶음의 "일부만 선택" 문구 (전부 또는 하나도 없으면 비어 있고 숨겨진다) */
+  function setPart(el, g) {
+    const n = g.ids.filter((id) => sel.has(id)).length;
+    const partial = n > 0 && n < g.ids.length;
+    el.textContent = partial ? t('presets.npcPartial', { n, total: g.ids.length }) : '';
+    el.hidden = !partial;
+  }
+  function partLabel(g) { const el = h('span', { class: 'pr-part' }); setPart(el, g); return el; }
+  /** 선택이 바뀐 뒤, 이미 그려진 체크박스를 현재 선택에 맞춘다 (NPC 묶음과 그 안의 그룹이 서로 영향을 주므로) */
+  function syncRows() {
+    for (const rec of cats.values()) {
+      if (!rec.built) continue;
+      const byKey = new Map(rec.list.map((g) => [g.special ? `n${g.key}` : `g${g.id}`, g]));
+      rec.body.querySelectorAll('input[type=checkbox]').forEach((input) => {
+        const g = byKey.get(input.dataset.npc !== undefined ? `n${input.dataset.npc}` : `g${input.dataset.gid}`);
+        if (!g) return;
+        setBox(input, g);
+        if (g.special) setPart(input.closest('label').querySelector('.pr-part'), g);
+      });
+    }
   }
 
   function buildTree() {
@@ -321,12 +375,13 @@ function groupsTab(p, { onChanged, rebuild }) {
     cats.clear();
     // 게임 오버뷰 목록에 없는 그룹은 숨기되, 이 프리셋에 이미 들어 있는 것은 보이게 둔다 (끌 수 있어야 하므로)
     const pinned = new Set([...sel].filter((id) => gd.groups[id] && !isListedGroup(id)));
-    const showing = (g) => prefs.showAll || g.listed || pinned.has(g.id);
+    // NPC 묶음에 들어 있는 그룹은 게임에서 Entity 에 따로 나오지 않으므로, "게임 목록 외 그룹 표시"를 켤 때만 개별로 보인다
+    const showing = (g) => prefs.showAll || (g.listed && !g.npc) || pinned.has(g.id);
     const visible = [];
     hiddenGroups = [];
     let shown = 0, total = 0;
     for (const c of order) {
-      const all = byCat.get(c);
+      const all = prefs.showAll ? byCat.get(c) : byCat.get(c).filter((g) => !g.npc);
       const list = all.filter(showing);
       total += all.length; shown += list.length;
       if (list.length) visible.push([c, list]);
@@ -340,7 +395,7 @@ function groupsTab(p, { onChanged, rebuild }) {
       const details = h('details', { class: 'pr-cat', dataset: { cat: c } },
         h('summary', { class: 'pr-cat-head' }, cb,
           h('span', { class: 'pr-cat-name' }, nm.name, nm.alt ? h('span', { class: 'pr-en' }, nm.alt) : null,
-            h('span', { class: 'pr-id mono' }, `#${c}`)),
+            c === NPC_CAT ? null : h('span', { class: 'pr-id mono' }, `#${c}`)),
           countEl),
         body);
       const rec = { id: c, list, cb, countEl, body, details, built: false, auto: false, nameHit: false, nameSearch: nm.search };
@@ -401,12 +456,14 @@ function groupsTab(p, { onChanged, rebuild }) {
       const g = gd.groups[id];
       if (g && cats.get(g.cat)) refreshCat(cats.get(g.cat));
       afterChange();
+    } else if (t.dataset.npc !== undefined) {
+      const g = cats.get(NPC_CAT)?.list.find((x) => x.key === t.dataset.npc);
+      if (g) { setIds(g.ids, t.checked); afterChange(); }
     } else if (t.dataset.catcb !== undefined) {
       const rec = cats.get(Number(t.dataset.catcb));
       // 검색 중이면 일치하는 항목만, 아니면 카테고리 전체
-      const ids = (q ? rec.list.filter((g) => rec.nameHit || g.search.includes(q)) : rec.list).map((g) => g.id);
+      const ids = (q ? rec.list.filter((g) => rec.nameHit || g.search.includes(q)) : rec.list).flatMap(idsOf);
       setIds(ids, t.checked);
-      rec.body.querySelectorAll('input[data-gid]').forEach((i) => { i.checked = sel.has(Number(i.dataset.gid)); });
       afterChange();
     }
   });
@@ -445,15 +502,16 @@ function groupsTab(p, { onChanged, rebuild }) {
   showAll.addEventListener('change', () => { prefs.showAll = showAll.checked; buildTree(); });
   const catInfo = h('span', { class: 'hint' });
 
-  const others = model.presets.map((o, i) => ({ o, i })).filter(({ o }) => o !== p);
-  const srcSel = h('select', { 'aria-label': t('presets.importSrcAria') }, others.map(({ o, i }) => h('option', { value: i }, `${o.name} (${uniqueCount(o.groups)})`)));
+  // 선택지는 프리셋 객체 자체를 가리킨다 (프리셋 목록을 끌어서 순서를 바꿔도 엉뚱한 프리셋에서 가져오지 않도록)
+  const others = model.presets.filter((o) => o !== p);
+  const srcSel = h('select', { 'aria-label': t('presets.importSrcAria') }, others.map((o, i) => h('option', { value: i }, `${o.name} (${uniqueCount(o.groups)})`)));
   const modeSel = h('select', { 'aria-label': t('presets.importModeAria') },
     h('option', { value: 'merge' }, t('presets.modeMerge')), h('option', { value: 'intersect' }, t('presets.modeIntersect')),
     h('option', { value: 'subtract' }, t('presets.modeSubtract')), h('option', { value: 'replace' }, t('presets.modeReplace')));
   const importBtn = h('button', {
     type: 'button', class: 'btn', disabled: !others.length,
     onclick: () => {
-      const src = model.presets[Number(srcSel.value)];
+      const src = others[Number(srcSel.value)];
       if (!src) return;
       const o = new Set(src.groups), before = sel.size, mode = modeSel.value;
       let next;
@@ -571,11 +629,11 @@ function statesTab(p, { rebuild }) {
   });
 
   const others = model.presets.filter((o) => o !== p);
-  const srcSel = h('select', { 'aria-label': t('presets.copyAria') }, others.map((o) => h('option', { value: model.presets.indexOf(o) }, o.name)));
+  const srcSel = h('select', { 'aria-label': t('presets.copyAria') }, others.map((o, i) => h('option', { value: i }, o.name)));
   const copyBtn = h('button', {
     type: 'button', class: 'btn', disabled: !others.length,
     onclick: () => {
-      const src = model.presets[Number(srcSel.value)];
+      const src = others[Number(srcSel.value)];
       if (!src) return;
       p.filteredStates = [...src.filteredStates];
       p.alwaysShownStates = [...src.alwaysShownStates];
