@@ -98,3 +98,6 @@ dialog.modal::backdrop { background: #000a; }
 .modal-msg { margin-bottom: 12px; white-space: pre-wrap; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
 .dropzone-active::after { content: attr(data-drop); position: fixed; inset: 0; background: #000b; color: var(--accent); display: grid; place-items: center; font-size: 22px; z-index: 200; }
+/* 열린 파일이 폴더 밖에서 바뀌었을 때(게임에서 다시 내보냄 등) 상단 바 아래쪽에 한 줄로 알린다 */
+.topbar .notice { flex: 1 0 100%; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 6px 10px; border: 1px solid var(--accent); border-left-width: 4px; border-radius: 6px; background: var(--accent-dim); }
+.topbar .notice-text { flex: 1 1 320px; }

@@ -108,6 +108,13 @@ async function api(req, res, url) {
       return json(res, 200, { name, text: fs.readFileSync(p, 'utf8'), mtime: fs.statSync(p).mtimeMs });
     }
     if (req.method === 'PUT') {
+      // 편집기가 이 파일을 읽은 뒤(base = 그때의 수정 시각) 다른 곳에서 바뀌었으면 덮어쓰지 않는다. 게임에서 같은 이름으로
+      // 다시 내보낸 파일을 편집기의 오래된 내용으로 덮어써서 잃는 일을 막는다. force=1 이면 알고도 덮어쓰는 것이다.
+      const base = Number(q.get('base'));
+      if (q.get('base') !== null && Number.isFinite(base) && q.get('force') !== '1' && fs.existsSync(p)) {
+        const current = fs.statSync(p).mtimeMs;
+        if (Math.abs(current - base) > 1) { req.resume(); return json(res, 409, { error: 'The file was changed after it was opened', code: 'changed_on_disk', mtime: current }); }
+      }
       let text = await readBody(req);
       // 기존 파일이 CRLF 면 CRLF 로 (새 파일은 윈도우 기본값인 CRLF)
       const prev = fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : null;
@@ -117,7 +124,9 @@ async function api(req, res, url) {
       let backup = null;
       if (fs.existsSync(p)) {
         fs.mkdirSync(BACKUPS, { recursive: true });
-        backup = `${name.replace(/\.ya?ml$/i, '')}_${stamp()}.yaml`;
+        const stem = `${name.replace(/\.ya?ml$/i, '')}_${stamp()}`;
+        backup = `${stem}.yaml`;
+        for (let n = 2; fs.existsSync(path.join(BACKUPS, backup)); n++) backup = `${stem}-${n}.yaml`;   // 같은 초에 또 저장해도 앞의 백업을 덮어쓰지 않는다
         fs.copyFileSync(p, path.join(BACKUPS, backup));
       }
       fs.mkdirSync(dir, { recursive: true });
