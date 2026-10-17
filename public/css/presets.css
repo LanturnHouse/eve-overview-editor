@@ -79,3 +79,7 @@ details.has-sel .pr-cat-count { color: var(--accent); font-weight: 600; }
 .pr-seg label:has(input:checked) { color: var(--text); font-weight: 600; background: var(--accent-dim); }
 .pr-seg label.pr-seg-hide:has(input:checked) { background: #ef535033; color: #ff8c8a; }
 .pr-seg label.pr-seg-show:has(input:checked) { background: #5cc98a33; color: #8be0b0; }
+.pr-part { flex: none; font-size: 11px; color: var(--accent); }
+.pr-part[hidden] { display: none; }
+/* NPC 묶음의 이름은 끝부분만 다른 긴 이름이 많아서, 이 카테고리만 한 줄에 하나씩 넓게 보여 준다 */
+details.pr-cat[data-cat="-1"] .pr-cat-body { grid-template-columns: 1fr; }
